@@ -15,12 +15,11 @@ import {
   signal,
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzModalService } from 'ng-zorro-antd/modal';
 
 import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
 import { formatFileSize, normalizeText, splitLinks, TextPart } from '../../shared/text.util';
+import { UiFeedbackService } from '../../shared/ui-feedback.service';
 import { canDeleteForAll, canEditMessage } from '../chat.service';
 import { Attachment, Conversation, Message } from '../chat.models';
 
@@ -120,8 +119,7 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
 
   constructor(
     private readonly transloco: TranslocoService,
-    private readonly notices: NzMessageService,
-    private readonly modal: NzModalService,
+    private readonly feedback: UiFeedbackService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -263,20 +261,17 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
   confirmDelete(id: string, forAll: boolean): void {
     const message = this.messages.find((m) => m.id === id);
     if (!message || (forAll && !canDeleteForAll(message, this.meId))) {
-      this.notices.warning(this.transloco.translate('messages.deleteExpired'));
+      this.feedback.warning(this.transloco.translate('messages.deleteExpired'));
       return;
     }
-    this.modal.confirm({
+    this.feedback.confirm({
       nzTitle: this.transloco.translate(forAll ? 'messages.deleteForAll' : 'messages.deleteForMe'),
       nzContent: this.transloco.translate(forAll ? 'messages.deleteForAllConfirm' : 'messages.deleteForMeConfirm'),
       nzWidth: 420,
-      nzCentered: true,
-      nzWrapClassName: 'delete-confirm-modal',
       nzIconType: 'exclamation-circle',
       nzOkText: this.transloco.translate('messages.delete'),
       nzOkDanger: true,
       nzCancelText: this.transloco.translate('messages.cancel'),
-      nzAutofocus: 'cancel',
       nzOnOk: () => forAll ? this.deleteForAllRequested.emit(id) : this.deleteRequested.emit(id),
     });
   }
@@ -284,7 +279,7 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
   jumpToMessage(id: string): void {
     const target = this.scroller.nativeElement.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(id)}"]`);
     if (!target) {
-      this.notices.info(this.transloco.translate('messages.unavailable'));
+      this.feedback.info(this.transloco.translate('messages.unavailable'));
       return;
     }
     target.scrollIntoView({ block: 'center', behavior: 'smooth' });

@@ -42,35 +42,30 @@
   </div>
 
   <div class="nav__foot">
-    @if (appearanceOpen()) {
-      <div class="nav__menu"><app-appearance-menu /></div>
-    }
     <div class="me">
-      <app-avatar [name]="userName" [online]="true" [showPresence]="true" class="me__avatar" />
-      <span class="me__text">
-        <span class="me__name">{{ userName }}</span>
-        <span class="me__status">{{ 'me.status' | transloco }}</span>
-      </span>
       <button
         type="button"
         class="me__settings"
         [class.me__settings--on]="appearanceOpen()"
         [attr.aria-expanded]="appearanceOpen()"
-        [attr.aria-label]="'appearance.title' | transloco"
-        [title]="'appearance.title' | transloco"
+        aria-haspopup="dialog"
+        [attr.aria-controls]="appearanceOpen() ? 'account-settings-menu' : null"
+        [attr.aria-label]="'settings.title' | transloco"
+        [title]="'settings.title' | transloco"
         (click)="toggleAppearance()"
       >
         <app-icon name="settings" />
       </button>
-      <button
-        type="button"
-        class="me__settings"
-        [attr.aria-label]="'me.logout' | transloco"
-        [title]="'me.logout' | transloco"
-        (click)="logout()"
-      >
-        <app-icon name="logout" />
-      </button>
     </div>
+    @if (appearanceOpen()) {
+      <div class="nav__menu">
+        <app-appearance-menu
+          [userName]="userName"
+          [userEmail]="userEmail"
+          [userUsername]="userUsername"
+          (logoutRequested)="logout()"
+        />
+      </div>
+    }
   </div>
 </nav>

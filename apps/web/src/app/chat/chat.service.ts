@@ -1,22 +1,20 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Inject, Injectable, computed, signal } from '@angular/core';
 
+import {
+  ApiConversation,
+  ApiFriend,
+  ApiFriendRequest,
+  ApiMessage,
+  ApiUserPage,
+  ChatApi,
+  ChatPort,
+} from './chat-api';
 import {
   Conversation,
   LoadState,
   Message,
-  MessageStatus,
-  MessageType,
-  Reaction,
   ReplyRef,
 } from './chat.models';
-import { buildSeed } from './chat.seed';
-
-const BOT_REPLIES = [
-  'Ok bạn nhé!',
-  'Mình đã nhận được rồi, cảm ơn bạn.',
-  'Để mình xem lại rồi báo bạn sau nha.',
-  'Haha, đúng rồi đó 😄',
-];
 
 export const DELETE_FOR_ALL_MS = 15 * 60_000;
 
@@ -29,48 +27,31 @@ export function canDeleteForAll(message: Message, meId: string, now = Date.now()
 
 /** Chỉ sửa được tin văn bản của chính mình, chưa thu hồi và không còn đang gửi. */
 export function canEditMessage(message: Message, meId: string): boolean {
-  return (
-    message.senderId === meId &&
+  return message.senderId === meId &&
     message.type === 'text' &&
     !message.recalledAt &&
     message.status !== 'queued' &&
-    message.status !== 'sending'
-  );
+    message.status !== 'sending';
 }
 
-/** Đọc tỉ lệ ảnh thật để giữ chỗ trước khi tải. */
-function readImageRatio(file: File): Promise<number | undefined> {
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img.naturalHeight ? img.naturalWidth / img.naturalHeight : undefined);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(undefined);
-    };
-    img.src = url;
-  });
-}
-
-/**
- * Kho dữ liệu chat dùng MOCK (chưa có backend).
- * Khi có API thật: thay load()/send() bằng ChatApi + ChatSocket, giữ nguyên signal công khai.
- */
 @Injectable({ providedIn: 'root' })
 export class ChatService {
-  readonly meId = 'me';
-  readonly meName = 'Minh Anh';
+  meId = '';
+  meName = '';
+  readonly meUsername = signal('');
   readonly loadState = signal<LoadState>('loading');
   readonly selectedId = signal<string | null>(null);
   readonly typingId = signal<string | null>(null);
   readonly conversations = signal<Conversation[]>([]);
+  readonly friends = signal<ApiFriend[]>([]);
+  readonly incomingFriendRequests = signal<ApiFriendRequest[]>([]);
+  readonly outgoingFriendRequests = signal<ApiFriendRequest[]>([]);
 
   private readonly messageMap = signal<Record<string, Message[]>>({});
+  private pollHandle: ReturnType<typeof setInterval> | null = null;
+  private refreshTask: Promise<void> | null = null;
+  private refreshAgain = false;
 
-  /** Ghim lên đầu, sau đó theo thời gian mới nhất. */
   readonly sortedConversations = computed(() =>
     [...this.conversations()].sort(
       (a, b) => Number(b.pinned) - Number(a.pinned) || b.lastAt - a.lastAt,
@@ -82,24 +63,36 @@ export class ChatService {
   readonly selectedMessages = computed(
     () => (this.messageMap()[this.selectedId() ?? ''] ?? []).filter((m) => !m.deletedForMe),
   );
-  /** Tổng số tin chưa đọc (bỏ qua hội thoại tắt thông báo). */
   readonly totalUnread = computed(() =>
     this.conversations()
       .filter((c) => !c.muted)
       .reduce((sum, c) => sum + c.unread, 0),
   );
 
-  /** Tải dữ liệu mẫu; lỗi được ghi log và chuyển sang trạng thái error. */
+  constructor(@Inject(ChatApi) private readonly api: ChatPort) {}
+
   async load(): Promise<void> {
     this.loadState.set('loading');
     try {
-      await this.delay(500);
-      const { conversations, messages } = buildSeed(this.meName);
-      this.conversations.set(conversations);
-      this.messageMap.set(messages);
+      const me = await this.api.me();
+      this.meId = me.id;
+      this.meName = me.displayName || me.email;
+      this.meUsername.set(me.username);
+      const [items, requests, friends, outgoingRequests] = await Promise.all([
+        this.api.conversations(),
+        this.api.incomingFriendRequests(),
+        this.api.friends(),
+        this.api.outgoingFriendRequests(),
+      ]);
+      this.conversations.set(items.map((item) => this.toConversation(item)));
+      this.incomingFriendRequests.set(requests);
+      this.friends.set(friends);
+      this.outgoingFriendRequests.set(outgoingRequests);
+      this.messageMap.set({});
       this.loadState.set('ready');
+      this.startPolling();
     } catch (error) {
-      console.error('Không tải được hội thoại', error);
+      console.error('Không tải được dữ liệu hội thoại', error);
       this.loadState.set('error');
     }
   }
@@ -107,276 +100,337 @@ export class ChatService {
   select(id: string | null): void {
     this.selectedId.set(id);
     if (id) {
-      this.patchConversation(id, { unread: 0 });
+      void this.loadMessages(id).catch((error: unknown) => {
+        console.error('Không tải được lịch sử tin nhắn', error);
+      });
     }
   }
 
-  togglePinned(id: string): void {
+  async togglePinned(id: string): Promise<void> {
     const conversation = this.conversations().find((item) => item.id === id);
-    if (conversation) {
-      this.patchConversation(id, { pinned: !conversation.pinned });
+    if (!conversation) {
+      return;
     }
+    const updated = await this.api.updateConversation(id, { pinned: !conversation.pinned });
+    this.replaceConversation(updated);
   }
 
-  toggleMuted(id: string): void {
+  async toggleMuted(id: string): Promise<void> {
     const conversation = this.conversations().find((item) => item.id === id);
-    if (conversation) {
-      this.patchConversation(id, { muted: !conversation.muted });
+    if (!conversation) {
+      return;
     }
+    const updated = await this.api.updateConversation(id, { muted: !conversation.muted });
+    this.replaceConversation(updated);
   }
 
-  /** Gửi tin: hiện ngay (đang gửi) rồi chuyển dần sang đã gửi/đã nhận/đã xem. */
+  async sendFriendRequest(username: string): Promise<void> {
+    await this.api.sendFriendRequest(username.trim());
+    await this.refreshConversationList();
+  }
+
+  async declineFriendRequest(requestId: string): Promise<void> {
+    await this.api.declineFriendRequest(requestId);
+    await this.refreshConversationList();
+  }
+
+  async cancelFriendRequest(requestId: string): Promise<void> {
+    await this.api.cancelFriendRequest(requestId);
+    await this.refreshConversationList();
+  }
+
+  async removeFriend(userId: string): Promise<void> {
+    await this.api.removeFriend(userId);
+    await this.refreshConversationList();
+  }
+
+  discoverUsers(query: string, cursor?: string | null): Promise<ApiUserPage> {
+    return this.api.discoverUsers(query.trim(), cursor);
+  }
+
+  async acceptFriendRequest(requestId: string): Promise<string> {
+    const apiConversation = await this.api.acceptFriendRequest(requestId);
+    const conversation = this.toConversation(apiConversation);
+    this.conversations.update((items) => [
+      conversation,
+      ...items.filter((item) => item.id !== conversation.id),
+    ]);
+    this.incomingFriendRequests.update((requests) =>
+      requests.filter((request) => request.id !== requestId),
+    );
+    await this.refreshConversationList();
+    return conversation.id;
+  }
+
   async send(
     conversationId: string,
     content: string,
     files: File[],
     replyTo?: ReplyRef,
   ): Promise<void> {
+    if (files.length) {
+      throw new Error('Tệp đính kèm chưa được hỗ trợ.');
+    }
     const text = content.trim();
-    const created: Message[] = [];
-    if (text) {
-      created.push(this.createMessage(conversationId, 'text', text, undefined, replyTo));
-    }
-    for (const file of files) {
-      const isImage = file.type.startsWith('image/');
-      const ratio = isImage ? await readImageRatio(file) : undefined;
-      created.push(
-        this.createMessage(conversationId, isImage ? 'image' : 'file', '', {
-          name: file.name,
-          size: file.size,
-          url: URL.createObjectURL(file),
-          ratio,
-        }),
-      );
-    }
-    if (!created.length) {
+    if (!text) {
       return;
     }
-    created.forEach((m) => this.appendMessage(m));
-    const last = created[created.length - 1];
-    this.patchConversation(conversationId, {
-      lastKind: last.type,
-      lastText: last.type === 'file' ? (last.attachment?.name ?? '') : last.content,
-      lastMine: true,
-      lastSender: this.meName,
-      lastAt: last.createdAt,
-    });
-
-    await this.delay(300);
-    // ponytail: mock coi "offline" là lỗi mạng; thay bằng outbox + backoff khi có ChatApi thật.
-    if (!navigator.onLine) {
-      created.forEach((m) => this.markFailed(conversationId, m.id));
-      return;
-    }
-    created.forEach((m) => this.setStatus(conversationId, m.id, 'sent'));
-    void this.advanceStatus(conversationId, created);
-    void this.botReply(conversationId);
+    const clientMsgId = crypto.randomUUID();
+    const optimistic: Message = {
+      id: clientMsgId,
+      clientMsgId,
+      conversationId,
+      seq: this.nextSequence(conversationId),
+      senderId: this.meId,
+      senderName: this.meName,
+      type: 'text',
+      content: text,
+      status: 'sending',
+      replyTo,
+      createdAt: Date.now(),
+    };
+    this.appendMessage(optimistic);
+    this.syncPreview(conversationId);
+    await this.persistMessage(optimistic, replyTo);
   }
 
-  /** Gửi lại tin lỗi, giữ nguyên id/clientMsgId (không tạo tin mới). */
-  retry(conversationId: string, messageId: string): void {
+  async retry(conversationId: string, messageId: string): Promise<void> {
     const message = this.findMessage(conversationId, messageId);
-    // Chỉ tin của mình đang lỗi: chặn tin người khác, tin đã gửi và bấm lặp khi đang gửi.
     if (!message || message.senderId !== this.meId || message.status !== 'failed') {
       return;
     }
-    this.setStatus(conversationId, messageId, 'sending');
-    void this.delay(400).then(() =>
-      navigator.onLine
-        ? this.updateMessage(conversationId, messageId, { status: 'sent', failureReason: undefined })
-        : this.markFailed(conversationId, messageId),
-    );
+    this.updateMessage(conversationId, messageId, { status: 'sending', failureReason: undefined });
+    await this.persistMessage(message, message.replyTo);
   }
 
-  /** Sửa tin văn bản của mình; trả về false nếu không được phép hoặc nội dung rỗng. */
-  editMessage(conversationId: string, messageId: string, content: string): boolean {
+  async editMessage(conversationId: string, messageId: string, content: string): Promise<boolean> {
     const text = content.trim();
     const message = this.findMessage(conversationId, messageId);
     if (!text || !message || !canEditMessage(message, this.meId)) {
       return false;
     }
-    this.updateMessage(conversationId, messageId, { content: text, editedAt: Date.now() });
+    const updated = await this.api.editMessage(conversationId, messageId, text);
+    this.updateMessage(conversationId, messageId, this.toMessage(updated, conversationId));
     this.syncPreview(conversationId);
     return true;
   }
 
-  /** Xóa phía tôi: giữ tombstone cục bộ để tin không xuất hiện lại khi đồng bộ. */
-  deleteMessage(conversationId: string, messageId: string): boolean {
+  async deleteMessage(conversationId: string, messageId: string): Promise<boolean> {
     const message = this.findMessage(conversationId, messageId);
     if (!message || message.deletedForMe) {
       return false;
     }
+    await this.api.hideMessage(conversationId, messageId);
     this.updateMessage(conversationId, messageId, { deletedForMe: true });
     this.syncPreview(conversationId);
     return true;
   }
 
-  /** Mock thu hồi toàn cục: bảo toàn seq, xóa nội dung/tệp và chặn tin cũ hiện lại. */
-  deleteForAll(conversationId: string, messageId: string): boolean {
+  async deleteForAll(conversationId: string, messageId: string): Promise<boolean> {
     const message = this.findMessage(conversationId, messageId);
     if (!message || !canDeleteForAll(message, this.meId)) {
       return false;
     }
-    this.updateMessage(conversationId, messageId, {
-      content: '', attachment: undefined, replyTo: undefined, reactions: undefined,
-      recalledAt: Date.now(),
-    });
-    // Xóa cả bản trích dẫn; tránh lộ lại nội dung đã thu hồi qua tin trả lời.
+    const recalled = await this.api.recallMessage(conversationId, messageId);
+    this.updateMessage(conversationId, messageId, this.toMessage(recalled, conversationId));
     this.messageMap.update((map) => Object.fromEntries(Object.entries(map).map(([id, messages]) => [
       id,
       messages.map((item) => item.replyTo?.messageId === messageId
         ? { ...item, replyTo: { ...item.replyTo, text: '' } }
         : item),
     ])));
-    if (message.attachment?.url.startsWith('blob:') &&
-        !Object.values(this.messageMap()).flat().some((m) =>
-          m.id !== messageId && !m.recalledAt && m.attachment?.url === message.attachment?.url,
-        )) {
-      URL.revokeObjectURL(message.attachment.url);
-    }
     this.syncPreview(conversationId);
     return true;
   }
 
-  /** Chuyển tiếp thành tin mới theo từng hội thoại; lỗi một nơi không ảnh hưởng nơi khác. */
   async forwardMessage(messageId: string, sourceId: string, targets: string[]): Promise<Record<string, boolean>> {
     const source = this.findMessage(sourceId, messageId);
-    if (!source || source.recalledAt || source.deletedForMe ||
-        !['sent', 'delivered', 'seen'].includes(source.status)) {
+    if (!source || source.recalledAt || source.deletedForMe || !source.content.trim()) {
       return Object.fromEntries(targets.map((id) => [id, false]));
     }
     const result: Record<string, boolean> = {};
     for (const id of [...new Set(targets)]) {
-      if (!this.conversations().some((c) => c.id === id)) {
+      try {
+        await this.send(id, source.content, []);
+        result[id] = true;
+      } catch (error) {
+        console.error(`Không chuyển được tin sang hội thoại ${id}`, error);
         result[id] = false;
-        continue;
       }
-      const message = this.createMessage(id, source.type, source.content, source.attachment);
-      message.forwardedFrom = sourceId;
-      this.appendMessage(message);
-      this.syncPreview(id);
-      await this.delay(300);
-      if (!navigator.onLine) {
-        this.markFailed(id, message.id);
-        result[id] = false;
-        continue;
-      }
-      this.setStatus(id, message.id, 'sent');
-      void this.advanceStatus(id, [message]);
-      result[id] = true;
     }
     return result;
   }
 
-  /** Bật/tắt reaction của mình trên một tin (của mình hoặc người khác). */
-  react(conversationId: string, messageId: string, emoji: string): void {
-    this.messageMap.update((map) => ({
-      ...map,
-      [conversationId]: (map[conversationId] ?? []).map((m) =>
-        m.id === messageId ? { ...m, reactions: this.toggleReaction(m.reactions ?? [], emoji) } : m,
-      ),
-    }));
+  async react(conversationId: string, messageId: string, emoji: string): Promise<void> {
+    const updated = await this.api.toggleReaction(conversationId, messageId, emoji);
+    this.updateMessage(conversationId, messageId, this.toMessage(updated, conversationId));
+  }
+
+  stop(): void {
+    this.selectedId.set(null);
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+      this.pollHandle = null;
+    }
+  }
+
+  private async loadMessages(conversationId: string): Promise<void> {
+    const apiMessages = await this.api.messages(conversationId);
+    const persistedMessages = apiMessages
+      .map((message) => this.toMessage(message, conversationId))
+      .sort((a, b) => a.seq - b.seq);
+    const persistedIds = new Set(persistedMessages.map((message) => message.id));
+    const persistedClientIds = new Set(persistedMessages.map((message) => message.clientMsgId));
+    const pending = (this.messageMap()[conversationId] ?? []).filter((message) =>
+      (message.status === 'sending' || message.status === 'failed') &&
+      !persistedIds.has(message.id) &&
+      !persistedClientIds.has(message.clientMsgId),
+    );
+    const messages = [...persistedMessages, ...pending].sort((a, b) => a.seq - b.seq);
+    this.messageMap.update((map) => ({ ...map, [conversationId]: messages }));
+    const lastIncoming = [...apiMessages].find((message) => message.senderId !== this.meId);
+    if (apiMessages.length) {
+      const newestSeq = apiMessages.reduce(
+        (latest, message) => BigInt(message.createdSeq) > BigInt(latest) ? message.createdSeq : latest,
+        '0',
+      );
+      await this.api.updateReceipts(conversationId, newestSeq);
+    }
+    if (this.selectedId() === conversationId && lastIncoming) {
+      this.patchConversation(conversationId, { unread: 0 });
+    }
+  }
+
+  private async persistMessage(message: Message, replyTo?: ReplyRef): Promise<void> {
+    try {
+      const apiMessage = await this.api.sendMessage(
+        message.conversationId,
+        message.clientMsgId,
+        message.content,
+        replyTo,
+      );
+      const persisted = this.toMessage(apiMessage, message.conversationId);
+      this.messageMap.update((map) => ({
+        ...map,
+        [message.conversationId]: [
+          ...(map[message.conversationId] ?? []).filter((item) =>
+            item.id !== message.id && item.clientMsgId !== message.clientMsgId && item.id !== persisted.id,
+          ),
+          persisted,
+        ].sort((a, b) => a.seq - b.seq),
+      }));
+      this.syncPreview(message.conversationId);
+    } catch (error) {
+      const alreadyLoaded = this.messageMap()[message.conversationId]?.some((item) =>
+        item.clientMsgId === message.clientMsgId && item.id !== message.id,
+      );
+      if (alreadyLoaded) {
+        return;
+      }
+      this.updateMessage(message.conversationId, message.id, {
+        status: 'failed',
+        failureReason: 'network',
+        attempts: (message.attempts ?? 0) + 1,
+      });
+      throw error;
+    }
+  }
+
+  refreshRelationships(): Promise<void> {
+    return this.refreshConversationList();
+  }
+
+  private refreshConversationList(): Promise<void> {
+    if (this.refreshTask) {
+      this.refreshAgain = true;
+      return this.refreshTask.then(() =>
+        this.refreshAgain ? this.refreshConversationList() : undefined,
+      );
+    }
+    const task = this.performRefresh();
+    this.refreshTask = task;
+    return task.finally(() => {
+      if (this.refreshTask === task) {
+        this.refreshTask = null;
+      }
+    });
+  }
+
+  private async performRefresh(): Promise<void> {
+    do {
+      this.refreshAgain = false;
+      const [items, incoming, friends, outgoing] = await Promise.all([
+        this.api.conversations(),
+        this.api.incomingFriendRequests(),
+        this.api.friends(),
+        this.api.outgoingFriendRequests(),
+      ]);
+      const conversations = items.map((item) => this.toConversation(item));
+      this.conversations.set(conversations);
+      this.incomingFriendRequests.set(incoming);
+      this.friends.set(friends);
+      this.outgoingFriendRequests.set(outgoing);
+      const selectedId = this.selectedId();
+      if (selectedId && !conversations.some((item) => item.id === selectedId)) {
+        this.selectedId.set(null);
+      } else if (selectedId) {
+        await this.loadMessages(selectedId);
+      }
+    } while (this.refreshAgain);
+  }
+
+  private startPolling(): void {
+    if (!this.pollHandle) {
+    this.pollHandle = setInterval(() => {
+      void this.refreshConversationList().catch((error: unknown) => {
+        console.error('Không đồng bộ được hội thoại', error);
+      });
+    }, 5000);
+    }
+  }
+
+  private toConversation(api: ApiConversation): Conversation {
+    return this.api.toConversation(api, this.meId);
+  }
+
+  private replaceConversation(api: ApiConversation): void {
+    const updated = this.toConversation(api);
+    this.conversations.update((items) => items.map((item) => item.id === updated.id ? updated : item));
+  }
+
+  private toMessage(api: ApiMessage, conversationId: string): Message {
+    const conversation = this.conversations().find((item) => item.id === conversationId);
+    const deletedAt = api.deleted ? Date.parse(api.updatedAt) : undefined;
+    return {
+      id: api.id,
+      clientMsgId: api.clientMsgId,
+      conversationId,
+      seq: Number(api.createdSeq),
+      senderId: api.senderId,
+      senderName: api.senderName,
+      type: 'text',
+      content: api.body ?? '',
+      status: api.status,
+      replyTo: api.replyTo
+        ? {
+            messageId: api.replyTo.id,
+            senderName: api.replyTo.senderId === this.meId ? this.meName : conversation?.name ?? '',
+            text: api.replyTo.available ? api.replyTo.body ?? '' : '',
+          }
+        : undefined,
+      reactions: api.reactions,
+      recalledAt: deletedAt,
+      editedAt: api.editedAt ? Date.parse(api.editedAt) : undefined,
+      createdAt: Date.parse(api.createdAt),
+    };
+  }
+
+  private nextSequence(conversationId: string): number {
+    return (this.messageMap()[conversationId]?.at(-1)?.seq ?? 0) + 1;
   }
 
   private findMessage(conversationId: string, messageId: string): Message | undefined {
-    return this.messageMap()[conversationId]?.find((m) => m.id === messageId);
-  }
-
-  private markFailed(conversationId: string, messageId: string): void {
-    const attempts = (this.findMessage(conversationId, messageId)?.attempts ?? 0) + 1;
-    this.updateMessage(conversationId, messageId, { status: 'failed', failureReason: 'network', attempts });
-  }
-
-  /** Cập nhật dòng xem trước mà không làm lộ tin đã ẩn hay đã thu hồi. */
-  private syncPreview(conversationId: string): void {
-    const last = this.messageMap()[conversationId]?.filter((m) => !m.deletedForMe).at(-1);
-    if (!last) {
-      this.patchConversation(conversationId, { lastText: '', lastKind: 'text' });
-      return;
-    }
-    this.patchConversation(conversationId, {
-      lastKind: last.type,
-      lastText: last.recalledAt ? '' : last.type === 'file' ? (last.attachment?.name ?? '') : last.content,
-      lastMine: last.senderId === this.meId,
-      lastSender: last.senderName,
-      lastAt: last.createdAt,
-    });
-  }
-
-  private toggleReaction(list: Reaction[], emoji: string): Reaction[] {
-    const found = list.find((r) => r.emoji === emoji);
-    if (!found) {
-      return [...list, { emoji, count: 1, mine: true }];
-    }
-    if (!found.mine) {
-      return list.map((r) => (r === found ? { ...r, count: r.count + 1, mine: true } : r));
-    }
-    // Bỏ reaction của mình; hết người thả thì xoá chip.
-    return list
-      .map((r) => (r === found ? { ...r, count: r.count - 1, mine: false } : r))
-      .filter((r) => r.count > 0);
-  }
-
-  private async advanceStatus(conversationId: string, sent: Message[]): Promise<void> {
-    await this.delay(600);
-    sent.forEach((m) => this.setStatus(conversationId, m.id, 'delivered'));
-    await this.delay(1200);
-    sent.forEach((m) => this.setStatus(conversationId, m.id, 'seen'));
-  }
-
-  /** Bot giả lập: gõ rồi trả lời. */
-  private async botReply(conversationId: string): Promise<void> {
-    const conversation = this.conversations().find((c) => c.id === conversationId);
-    if (!conversation || conversation.isGroup) {
-      return;
-    }
-    await this.delay(1000);
-    this.typingId.set(conversationId);
-    await this.delay(1500);
-    this.typingId.set(null);
-    const reply = this.createMessage(
-      conversationId,
-      'text',
-      BOT_REPLIES[Math.floor(Math.random() * BOT_REPLIES.length)],
-      undefined,
-      undefined,
-      { id: conversationId, name: conversation.name },
-    );
-    this.appendMessage(reply);
-    const isOpen = this.selectedId() === conversationId;
-    this.patchConversation(conversationId, {
-      lastKind: 'text',
-      lastText: reply.content,
-      lastMine: false,
-      lastSender: conversation.name,
-      lastAt: reply.createdAt,
-      unread: isOpen ? 0 : conversation.unread + 1,
-    });
-  }
-
-  private createMessage(
-    conversationId: string,
-    type: MessageType,
-    content: string,
-    attachment?: Message['attachment'],
-    replyTo?: ReplyRef,
-    sender: { id: string; name: string } = { id: this.meId, name: this.meName },
-  ): Message {
-    const seq = (this.messageMap()[conversationId]?.at(-1)?.seq ?? 0) + 1;
-    return {
-      id: crypto.randomUUID(),
-      clientMsgId: crypto.randomUUID(),
-      conversationId,
-      seq,
-      senderId: sender.id,
-      senderName: sender.name,
-      type,
-      content,
-      attachment,
-      replyTo,
-      status: sender.id === this.meId ? 'sending' : 'seen',
-      createdAt: Date.now(),
-    };
+    return this.messageMap()[conversationId]?.find((message) => message.id === messageId);
   }
 
   private appendMessage(message: Message): void {
@@ -386,24 +440,33 @@ export class ChatService {
     }));
   }
 
-  private setStatus(conversationId: string, id: string, status: MessageStatus): void {
-    this.updateMessage(conversationId, id, { status });
-  }
-
   private updateMessage(conversationId: string, id: string, patch: Partial<Message>): void {
     this.messageMap.update((map) => ({
       ...map,
-      [conversationId]: (map[conversationId] ?? []).map((m) => (m.id === id ? { ...m, ...patch } : m)),
+      [conversationId]: (map[conversationId] ?? []).map((message) =>
+        message.id === id ? { ...message, ...patch } : message,
+      ),
     }));
   }
 
   private patchConversation(id: string, patch: Partial<Conversation>): void {
-    this.conversations.update((list) =>
-      list.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    this.conversations.update((items) =>
+      items.map((conversation) => conversation.id === id ? { ...conversation, ...patch } : conversation),
     );
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private syncPreview(conversationId: string): void {
+    const last = this.messageMap()[conversationId]?.filter((message) => !message.deletedForMe).at(-1);
+    if (!last) {
+      this.patchConversation(conversationId, { lastText: '', lastKind: 'text' });
+      return;
+    }
+    this.patchConversation(conversationId, {
+      lastKind: 'text',
+      lastText: last.recalledAt ? '' : last.content,
+      lastMine: last.senderId === this.meId,
+      lastSender: last.senderName,
+      lastAt: last.createdAt,
+    });
   }
 }

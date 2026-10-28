@@ -92,6 +92,7 @@ export interface AuthApi {
   resetPassword(request: ResetPasswordRequest): Promise<void>;
   resendCode(challengeId: string): Promise<AuthChallenge>;
   refreshSession(refreshToken: string): Promise<AuthSession>;
+  logout(refreshToken: string): Promise<void>;
 }
 
 export const AUTH_API = new InjectionToken<AuthApi>('AUTH_API');

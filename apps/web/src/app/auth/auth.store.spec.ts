@@ -40,6 +40,7 @@ describe('AuthStore', () => {
         resendAfterSeconds: 45,
       }),
       refreshSession: vi.fn().mockResolvedValue({ accessToken: 'access-3', refreshToken: 'refresh-3' }),
+      logout: vi.fn().mockResolvedValue(undefined),
     };
     secureTokens = new InMemorySecureTokenStore();
     TestBed.configureTestingModule({

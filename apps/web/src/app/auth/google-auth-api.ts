@@ -2,11 +2,11 @@ import { Injectable } from '@angular/core';
 
 import { AuthApiError, AuthSession, AuthUser } from './auth-api';
 import { MockAuthApi } from './mock-auth-api';
+import { API_BASE_URL } from '../api-base-url';
 
 // Client ID là public. Client secret KHÔNG dùng ở đây và không bao giờ đưa vào frontend.
 export const GOOGLE_CLIENT_ID = '774582659488-67b88dnq9amvq4aer3revh814ogh1a2e.apps.googleusercontent.com';
 // ponytail: cứng localhost; chuyển sang cấu hình theo môi trường khi deploy.
-const API_BASE_URL = 'http://localhost:3000';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 
 interface TokenResponse {
@@ -16,6 +16,8 @@ interface TokenResponse {
 
 interface ExchangeBody {
   accessToken?: string;
+  refreshToken?: string;
+  deviceToken?: string;
   user?: AuthUser;
 }
 
@@ -38,7 +40,7 @@ declare global {
   }
 }
 
-// ponytail: kế thừa mock cho các luồng email/OTP (UI không còn dùng). Tách riêng khi xoá các trang đó.
+// Các luồng ngoài Google vẫn tạm giữ adapter cũ; Google login và refresh dùng backend thật.
 @Injectable({ providedIn: 'root' })
 export class GoogleAuthApi extends MockAuthApi {
   private script?: Promise<void>;
@@ -68,11 +70,42 @@ export class GoogleAuthApi extends MockAuthApi {
         })
         .requestAccessToken();
     });
-    const { accessToken, user } = await this.exchange(googleToken);
-    return { accessToken, user, refreshToken: '' };
+    return this.exchange(googleToken);
   }
 
-  private async exchange(googleToken: string): Promise<{ accessToken: string; user?: AuthUser }> {
+  override async refreshSession(refreshToken: string): Promise<AuthSession> {
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {
+      throw new AuthApiError({ code: 'NETWORK_ERROR' });
+    }
+    return this.sessionFromResponse(response);
+  }
+
+  override async logout(refreshToken: string): Promise<void> {
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/v1/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+    } catch {
+      throw new AuthApiError({ code: 'NETWORK_ERROR' });
+    }
+    if (!response.ok) {
+      throw new AuthApiError({
+        code: response.status === 401 ? 'INVALID_CREDENTIALS' : 'SERVICE_UNAVAILABLE',
+      });
+    }
+  }
+
+  private async exchange(googleToken: string): Promise<AuthSession> {
     let response: Response;
     try {
       response = await fetch(`${API_BASE_URL}/v1/auth/google`, {
@@ -83,21 +116,31 @@ export class GoogleAuthApi extends MockAuthApi {
     } catch {
       throw new AuthApiError({ code: 'NETWORK_ERROR' });
     }
+    return this.sessionFromResponse(response, googleToken);
+  }
+
+  private async sessionFromResponse(response: Response, googleToken?: string): Promise<AuthSession> {
     if (response.status === 401) {
       throw new AuthApiError({ code: 'INVALID_CREDENTIALS' });
     }
     if (!response.ok) {
       throw new AuthApiError({ code: 'SERVICE_UNAVAILABLE' });
     }
-    // Chấp nhận cả { accessToken, user } lẫn { success, data: { id, accessToken } }.
     const body = (await response.json()) as { data?: ExchangeBody } & ExchangeBody;
     const payload = body.data ?? body;
-    if (typeof payload.accessToken !== 'string' || !payload.accessToken) {
+    if (
+      typeof payload.accessToken !== 'string' ||
+      !payload.accessToken ||
+      typeof payload.refreshToken !== 'string' ||
+      !payload.refreshToken
+    ) {
       throw new AuthApiError({ code: 'UNKNOWN' });
     }
     return {
       accessToken: payload.accessToken,
-      user: payload.user ?? (await this.googleProfile(googleToken)),
+      refreshToken: payload.refreshToken,
+      ...(payload.deviceToken ? { deviceToken: payload.deviceToken } : {}),
+      user: payload.user ?? (googleToken ? await this.googleProfile(googleToken) : undefined),
     };
   }
 

@@ -11,12 +11,12 @@ import {
   signal,
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
+import { UiFeedbackService } from '../../shared/ui-feedback.service';
 
 import { Conversation, Message, OutgoingMessage } from '../chat.models';
 import { ChatService } from '../chat.service';
@@ -59,8 +59,8 @@ export class ChatWindowComponent implements OnChanges {
 
   constructor(
     private readonly transloco: TranslocoService,
-    private readonly notices: NzMessageService,
-      private readonly chat: ChatService,
+    private readonly feedback: UiFeedbackService,
+    private readonly chat: ChatService,
   ) {
     this.targetConversations = chat.conversations;
   }
@@ -86,16 +86,31 @@ export class ChatWindowComponent implements OnChanges {
     this.infoOpen.update((open) => !open);
   }
 
-  onReact(event: { messageId: string; emoji: string }): void {
-    this.chat.react(this.conversation.id, event.messageId, event.emoji);
+  async onReact(event: { messageId: string; emoji: string }): Promise<void> {
+    try {
+      await this.chat.react(this.conversation.id, event.messageId, event.emoji);
+    } catch (error) {
+      console.error('Không lưu được reaction', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
+    }
   }
 
-  onRetry(messageId: string): void {
-    this.chat.retry(this.conversation.id, messageId);
+  async onRetry(messageId: string): Promise<void> {
+    try {
+      await this.chat.retry(this.conversation.id, messageId);
+    } catch (error) {
+      console.error('Gửi lại tin nhắn thất bại', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
+    }
   }
 
-  onEdit(event: { messageId: string; content: string }): void {
-    this.chat.editMessage(this.conversation.id, event.messageId, event.content);
+  async onEdit(event: { messageId: string; content: string }): Promise<void> {
+    try {
+      await this.chat.editMessage(this.conversation.id, event.messageId, event.content);
+    } catch (error) {
+      console.error('Không sửa được tin nhắn', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
+    }
   }
 
   onReply(message: Message): void {
@@ -105,17 +120,27 @@ export class ChatWindowComponent implements OnChanges {
     this.replyMessage.set(message);
   }
 
-  onDelete(messageId: string): void {
-    if (this.chat.deleteMessage(this.conversation.id, messageId)) {
-      this.notices.success(this.transloco.translate('messages.deletedForMe'));
+  async onDelete(messageId: string): Promise<void> {
+    try {
+      if (await this.chat.deleteMessage(this.conversation.id, messageId)) {
+        this.feedback.success(this.transloco.translate('messages.deletedForMe'));
+      }
+    } catch (error) {
+      console.error('Không xóa được tin nhắn', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
     }
   }
 
-  onDeleteForAll(messageId: string): void {
-    if (this.chat.deleteForAll(this.conversation.id, messageId)) {
-      this.notices.success(this.transloco.translate('messages.deletedForAll'));
-    } else {
-      this.notices.error(this.transloco.translate('messages.deleteExpired'));
+  async onDeleteForAll(messageId: string): Promise<void> {
+    try {
+      if (await this.chat.deleteForAll(this.conversation.id, messageId)) {
+        this.feedback.success(this.transloco.translate('messages.deletedForAll'));
+      } else {
+        this.feedback.error(this.transloco.translate('messages.deleteExpired'));
+      }
+    } catch (error) {
+      console.error('Không thu hồi được tin nhắn', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
     }
   }
 
@@ -156,15 +181,15 @@ export class ChatWindowComponent implements OnChanges {
       const succeeded = Object.values(result).filter(Boolean).length;
       const failed = Object.values(result).length - succeeded;
       if (succeeded) {
-        this.notices.success(this.transloco.translate('messages.forwardSuccess', { n: succeeded }));
+        this.feedback.success(this.transloco.translate('messages.forwardSuccess', { n: succeeded }));
       }
       if (failed) {
-        this.notices.error(this.transloco.translate('messages.forwardFailure', { n: failed }));
+        this.feedback.error(this.transloco.translate('messages.forwardFailure', { n: failed }));
       }
       this.forwardMessage.set(null);
     } catch (error) {
       console.error('Không chuyển tiếp được tin nhắn', error);
-      this.notices.error(this.transloco.translate('messages.forwardError'));
+      this.feedback.error(this.transloco.translate('messages.forwardError'));
     } finally {
       this.forwarding.set(false);
     }

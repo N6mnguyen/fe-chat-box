@@ -30,7 +30,7 @@
     bottom: calc(100% + var(--space-2));
     left: var(--space-3);
     z-index: 5;
-    min-width: 240px;
+    width: min(280px, calc(100vw - 32px));
   }
 }
 
@@ -151,38 +151,20 @@
 .me {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  --avatar-size: 40px;
-
-  &__text {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  &__name {
-    overflow: hidden;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__status {
-    color: var(--color-online);
-    font-size: 12px;
-  }
 
   &__settings {
-    display: inline-flex;
+    display: grid;
     flex: none;
-    padding: var(--space-2);
+    width: 40px;
+    height: 40px;
+    padding: 0;
     border: 0;
-    border-radius: var(--radius-sm);
+    border-radius: 50%;
     background: transparent;
     color: var(--color-text-muted);
     font-size: 18px;
     cursor: pointer;
+    place-items: center;
 
     &:hover,
     &--on {
@@ -245,11 +227,7 @@
   }
 
   .me {
-    flex-direction: column;
-
-    &__text {
-      display: none;
-    }
+    justify-content: center;
   }
 }
 
@@ -275,7 +253,7 @@
       right: var(--space-2);
       bottom: calc(100% + var(--space-2));
       left: var(--space-2);
-      width: auto;
+      width: min(280px, calc(100vw - 16px));
     }
   }
 

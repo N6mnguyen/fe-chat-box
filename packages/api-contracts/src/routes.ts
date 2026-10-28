@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Accepted, Ok } from './common.ts';
+import { Accepted, Ok, Page } from './common.ts';
 import * as A from './auth.ts';
 import * as M from './me.ts';
 import * as C from './chat.ts';
@@ -30,7 +30,7 @@ export const routes: Route[] = [
   r({ method: 'post', path: '/v1/auth/login', auth: 'public', summary: 'Đăng nhập; 200 TokenPair (scope full, hoặc restore nếu deleting) hoặc OtpChallenge', body: A.LoginRequest, status: 200, response: A.LoginResponse, errors: [400, 401, 403, 429, 503], rateLimit: 'login' }),
   r({ method: 'post', path: '/v1/auth/login/verify-device', auth: 'public', summary: 'Nhập OTP thiết bị mới', body: A.VerifyDeviceRequest, status: 200, response: A.TokenPair, errors: [400, 403, 422, 429], rateLimit: 'otp-verify' }),
   r({ method: 'post', path: '/v1/auth/refresh', auth: 'public', summary: 'Xoay vòng refresh; reuse thu hồi family', body: A.RefreshRequest, status: 200, response: A.TokenPair, errors: [400, 401, 429], rateLimit: 'refresh' }),
-  r({ method: 'post', path: '/v1/auth/logout', auth: 'token', summary: 'Đăng xuất thiết bị hiện tại', status: 204, errors: [401], idempotency: 'natural' }),
+  r({ method: 'post', path: '/v1/auth/logout', auth: 'public', summary: 'Thu hồi family refresh token hiện tại', body: A.RefreshRequest, status: 204, errors: [400], idempotency: 'natural' }),
   r({ method: 'post', path: '/v1/auth/password/forgot', auth: 'public', summary: 'Gửi OTP reset; luôn 202', body: A.ForgotPasswordRequest, status: 202, response: Accepted, errors: [400, 429], rateLimit: 'otp-send' }),
   r({ method: 'post', path: '/v1/auth/password/reset', auth: 'public', summary: 'Đặt lại mật khẩu, thu hồi mọi token', body: A.ResetPasswordRequest, status: 204, errors: [400, 422, 429, 503], rateLimit: 'otp-verify' }),
   r({ method: 'post', path: '/v1/auth/recover', auth: 'public', summary: 'Khôi phục bằng mã khôi phục (sau MVP đợt đầu)', body: A.RecoverRequest, status: 200, response: A.TokenPair, errors: [400, 401, 429, 503], rateLimit: 'login' }),
@@ -52,6 +52,7 @@ export const routes: Route[] = [
 
   // ---- users / friends / blocks ----
   r({ method: 'get', path: '/v1/users/by-username/{username}', auth: 'token', summary: 'Khớp chính xác; không tồn tại/chặn/không cho tìm -> 404', status: 200, response: C.PublicUser, errors: [400, 401, 404, 429], rateLimit: 'user-search' }),
+  r({ method: 'get', path: '/v1/users', auth: 'token', summary: 'Tài khoản discoverable đủ điều kiện gửi lời mời', query: C.UserDirectoryQuery, status: 200, response: Page(C.PublicUser), errors: [400, 401, 429], rateLimit: 'user-search' }),
   r({ method: 'post', path: '/v1/friend-requests', auth: 'token', summary: 'Gửi lời mời; luôn 202 (kể cả bị chặn)', body: C.FriendRequestCreate, status: 202, response: Accepted, errors: [400, 401, 429], rateLimit: 'friend-request', idempotency: 'natural' }),
   r({ method: 'get', path: '/v1/friend-requests/incoming', auth: 'token', summary: 'Lời mời đến (pending)', query: C.PaginationQuery, status: 200, response: C.FriendRequestPage, errors: [400, 401] }),
   r({ method: 'get', path: '/v1/friend-requests/outgoing', auth: 'token', summary: 'Lời mời đi (pending, chỉ bản thật)', query: C.PaginationQuery, status: 200, response: C.FriendRequestPage, errors: [400, 401] }),
@@ -71,6 +72,8 @@ export const routes: Route[] = [
   r({ method: 'patch', path: '/v1/conversations/{conversationId}', auth: 'token', summary: 'Ghim / tắt thông báo (của tôi)', body: C.ConversationPatch, status: 200, response: C.Conversation, errors: [400, 401, 404], idempotency: 'natural' }),
   r({ method: 'get', path: '/v1/conversations/{conversationId}/messages', auth: 'token', summary: 'Lịch sử, mới -> cũ, cursor theo createdSeq', query: C.MessageHistoryQuery, status: 200, response: C.MessagePage, errors: [400, 401, 404] }),
   r({ method: 'post', path: '/v1/conversations/{conversationId}/messages', auth: 'token', summary: 'Gửi tin (REST fallback của message.send)', body: C.SendMessageRequest, status: 201, response: C.SendMessageResponse, errors: [400, 401, 403, 404, 409, 429], rateLimit: 'message-send', idempotency: 'clientMsgId' }),
+  r({ method: 'patch', path: '/v1/conversations/{conversationId}/messages/{messageId}', auth: 'token', summary: 'Sửa tin văn bản của tôi', body: C.EditMessageRequest, status: 200, response: C.Message, errors: [400, 401, 403, 404] }),
+  r({ method: 'post', path: '/v1/conversations/{conversationId}/messages/{messageId}/reactions', auth: 'token', summary: 'Bật/tắt reaction của tôi', body: C.ReactionToggle, status: 200, response: C.Message, errors: [400, 401, 404] }),
   r({ method: 'post', path: '/v1/conversations/{conversationId}/messages/{messageId}/recall', auth: 'token', summary: 'Thu hồi (người gửi, ≤24h)', status: 200, response: C.Message, errors: [401, 403, 404, 422], idempotency: 'natural' }),
   r({ method: 'post', path: '/v1/conversations/{conversationId}/messages/{messageId}/hide', auth: 'token', summary: 'Xóa phía tôi', status: 204, errors: [401, 404], idempotency: 'natural' }),
   r({ method: 'get', path: '/v1/conversations/{conversationId}/changes', auth: 'token', summary: 'Change log sau afterSeq; 410 nếu quá cũ', query: C.ChangesQuery, status: 200, response: C.ChangePage, errors: [400, 401, 404, 410] }),

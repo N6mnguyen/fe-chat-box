@@ -2,7 +2,8 @@
   "common": {
     "soon": "Soon",
     "close": "Close",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "actionError": "Couldn't complete the request. Please try again."
   },
   "nav": {
     "label": "Main navigation",
@@ -35,8 +36,14 @@
     "lotus": "Lotus",
     "night": "Night"
   },
+  "settings": {
+    "title": "Settings"
+  },
   "me": {
     "status": "Online",
+    "account": "Account",
+    "accountFallback": "User",
+    "username": "Username",
     "logout": "Sign out"
   },
   "auth": {
@@ -162,7 +169,38 @@
     "muteNotifications": "Mute notifications",
     "unmuteNotifications": "Unmute notifications",
     "pinned": "Pinned",
-    "muted": "Muted"
+    "muted": "Muted",
+    "addFriend": "Add friend",
+    "friends": "Add friends and friend requests",
+    "friendSearch": "Search by name or username",
+    "sendFriendRequest": "Send request",
+    "sendingFriendRequest": "Sending...",
+    "friendRequestHint": "Only active accounts that allow discovery are shown.",
+    "friendRequestSubmitted": "Request accepted. If the username is valid, it will be delivered.",
+    "friendSearchMinimum": "Enter at least 2 characters to search.",
+    "noDiscoverableUsers": "No other discoverable accounts are available.",
+    "noFriendCandidates": "No matching account found, or a request has already been sent.",
+    "friendDirectoryError": "Couldn't load the account list.",
+    "loadingFriends": "Loading accounts...",
+    "loadMoreFriends": "Load more",
+    "refreshFriends": "Refresh",
+    "autoRefresh": "Automatically syncs every 5 seconds; no page reload needed.",
+    "incomingRequests": "Incoming requests",
+    "acceptFriendRequest": "Accept",
+    "friendRequestAccepted": "Friend request accepted.",
+    "declineFriendRequest": "Decline",
+    "friendRequestDeclined": "Friend request declined.",
+    "noIncomingRequests": "No incoming requests.",
+    "outgoingRequests": "Sent requests",
+    "cancelFriendRequest": "Cancel request",
+    "friendRequestCancelled": "Friend request cancelled.",
+    "noOutgoingRequests": "No pending sent requests.",
+    "myFriends": "Friends",
+    "removeFriend": "Remove friend",
+    "removeFriendTitle": "Remove friend?",
+    "removeFriendConfirm": "Are you sure you want to remove {{ name }} from your friends? The conversation history will not be deleted.",
+    "friendRemoved": "Friend removed.",
+    "noFriends": "You don't have any friends yet."
   },
   "time": {
     "now": "Just now",

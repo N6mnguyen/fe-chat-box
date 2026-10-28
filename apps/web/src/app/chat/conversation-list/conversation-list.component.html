@@ -5,6 +5,14 @@
       @if (state() === 'ready') {
         <span class="list__count">{{ 'list.count' | transloco: { n: total() } }}</span>
       }
+      <button
+        type="button"
+        class="list__friend-toggle"
+        [attr.aria-expanded]="friendPanelOpen()"
+        (click)="toggleFriendPanel()"
+      >
+        {{ 'list.addFriend' | transloco }}
+      </button>
     </div>
     <form class="search" [formGroup]="searchForm" role="search" (submit)="$event.preventDefault()">
       <app-icon name="search" class="search__icon" />
@@ -17,6 +25,145 @@
         [attr.aria-label]="'list.searchLabel' | transloco"
       />
     </form>
+    @if (friendPanelOpen()) {
+      <section class="friend-panel" [attr.aria-label]="'list.friends' | transloco">
+        <div class="friend-panel__toolbar">
+          <h2 class="friend-panel__heading">{{ 'list.friends' | transloco }}</h2>
+          <button type="button" class="friend-panel__refresh" (click)="refreshFriends()">
+            {{ 'list.refreshFriends' | transloco }}
+          </button>
+        </div>
+        <input
+          class="friend-panel__input"
+          type="search"
+          autocomplete="off"
+          [formControl]="friendSearch"
+          [placeholder]="'list.friendSearch' | transloco"
+          [attr.aria-label]="'list.friendSearch' | transloco"
+        />
+        <p class="friend-panel__hint">{{ 'list.friendRequestHint' | transloco }}</p>
+        @if (friendSearch.value.trim().length === 1) {
+          <p class="friend-panel__state" role="status">{{ 'list.friendSearchMinimum' | transloco }}</p>
+        } @else if (friendCandidatesError()) {
+          <div class="friend-panel__state" role="alert">
+            <span>{{ 'list.friendDirectoryError' | transloco }}</span>
+            <button type="button" class="btn" (click)="retryFriendSearch()">
+              {{ 'list.retry' | transloco }}
+            </button>
+          </div>
+        } @else {
+          @if (friendCandidates().length) {
+            <ul class="friend-panel__candidates">
+              @for (user of friendCandidates(); track user.id) {
+                <li class="friend-panel__candidate">
+                  <span class="friend-panel__candidate-info">
+                    <strong>{{ user.displayName || user.username }}</strong>
+                    <span>@{{ user.username }}</span>
+                  </span>
+                  <button
+                    type="button"
+                    class="btn"
+                    [disabled]="sendingRequests().has(user.id)"
+                    (click)="sendFriendRequest(user)"
+                  >
+                    {{ (sendingRequests().has(user.id) ? 'list.sendingFriendRequest' : 'list.sendFriendRequest') | transloco }}
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else if (!friendCandidatesLoading() && friendSearch.value.trim()) {
+            <p class="friend-panel__state" role="status">
+              {{ 'list.noFriendCandidates' | transloco }}
+            </p>
+          } @else if (!friendCandidatesLoading() && !friends().length) {
+            <p class="friend-panel__state" role="status">{{ 'list.noDiscoverableUsers' | transloco }}</p>
+          }
+          @if (friendCandidatesLoading()) {
+            <p class="friend-panel__state" role="status">{{ 'list.loadingFriends' | transloco }}</p>
+          }
+          @if (friendCandidatesCursor()) {
+            <button type="button" class="friend-panel__more" [disabled]="friendCandidatesLoading()" (click)="loadMoreFriendCandidates()">
+              {{ 'list.loadMoreFriends' | transloco }}
+            </button>
+          }
+        }
+        <div class="friend-panel__sections">
+          <section class="friend-panel__section">
+            <h3 class="friend-panel__title">{{ 'list.incomingRequests' | transloco }} ({{ incomingFriendRequests().length }})</h3>
+            @if (incomingFriendRequests().length) {
+              <ul class="friend-panel__items">
+                @for (request of incomingFriendRequests(); track request.id) {
+                  <li class="friend-panel__row">
+                    <span class="friend-panel__person">
+                      <strong>{{ request.sender.displayName || request.sender.username }}</strong>
+                      <span>@{{ request.sender.username }}</span>
+                    </span>
+                    <span class="friend-panel__actions">
+                      <button type="button" class="btn" [disabled]="pendingRelationshipActions().has(request.id)" (click)="acceptFriendRequest(request.id)">
+                        {{ 'list.acceptFriendRequest' | transloco }}
+                      </button>
+                      <button type="button" class="btn btn--quiet" [disabled]="pendingRelationshipActions().has(request.id)" (click)="declineFriendRequest(request.id)">
+                        {{ 'list.declineFriendRequest' | transloco }}
+                      </button>
+                    </span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="friend-panel__empty">{{ 'list.noIncomingRequests' | transloco }}</p>
+            }
+          </section>
+
+          <section class="friend-panel__section">
+            <h3 class="friend-panel__title">{{ 'list.outgoingRequests' | transloco }} ({{ outgoingFriendRequests().length }})</h3>
+            @if (outgoingFriendRequests().length) {
+              <ul class="friend-panel__items">
+                @for (request of outgoingFriendRequests(); track request.id) {
+                  <li class="friend-panel__row">
+                    <span class="friend-panel__person">
+                      <strong>{{ request.recipient.displayName || request.recipient.username }}</strong>
+                      <span>@{{ request.recipient.username }}</span>
+                    </span>
+                    <button type="button" class="btn btn--quiet" [disabled]="pendingRelationshipActions().has(request.id)" (click)="cancelFriendRequest(request.id)">
+                      {{ 'list.cancelFriendRequest' | transloco }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="friend-panel__empty">{{ 'list.noOutgoingRequests' | transloco }}</p>
+            }
+          </section>
+
+          <section class="friend-panel__section">
+            <h3 class="friend-panel__title">{{ 'list.myFriends' | transloco }} ({{ friends().length }})</h3>
+            @if (friends().length) {
+              <ul class="friend-panel__items">
+                @for (friend of friends(); track friend.user.id) {
+                  <li class="friend-panel__row">
+                    <span class="friend-panel__person">
+                      <strong>{{ friend.user.displayName || friend.user.username }}</strong>
+                      <span>@{{ friend.user.username }}</span>
+                    </span>
+                    <button
+                      type="button"
+                      class="btn btn--danger-quiet"
+                      [disabled]="pendingRelationshipActions().has(friend.user.id)"
+                      (click)="confirmRemoveFriend(friend)"
+                    >
+                      {{ 'list.removeFriend' | transloco }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="friend-panel__empty">{{ 'list.noFriends' | transloco }}</p>
+            }
+          </section>
+        </div>
+        <p class="friend-panel__sync">{{ 'list.autoRefresh' | transloco }}</p>
+      </section>
+    }
   </header>
 
   @switch (state()) {

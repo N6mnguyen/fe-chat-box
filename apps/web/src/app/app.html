@@ -1,6 +1,12 @@
 <div class="shell" [class.shell--chat]="selected()">
   <div class="shell__nav">
-    <app-nav-sidebar [unread]="totalUnread()" [userName]="meName()" (logoutRequested)="logout()" />
+    <app-nav-sidebar
+      [unread]="totalUnread()"
+      [userName]="meName()"
+      [userEmail]="meEmail()"
+      [userUsername]="meUsername()"
+      (logoutRequested)="logout()"
+    />
   </div>
 
   <div class="shell__list">

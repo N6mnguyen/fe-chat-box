@@ -12,6 +12,11 @@ export const FriendRequest = z
 export const Friend = z.object({ user: PublicUser, since: Timestamp }).meta({ id: 'Friend' });
 export const Block = z.object({ user: PublicUser, createdAt: Timestamp }).meta({ id: 'Block' });
 export const FriendRequestCreate = z.object({ username: Username }).meta({ id: 'FriendRequestCreate' });
+export const UserDirectoryQuery = z.object({
+  q: z.string().trim().min(2).max(80).optional(),
+  cursor: Cursor.optional(),
+  limit: Limit(100, 30),
+}).meta({ id: 'UserDirectoryQuery' });
 export const BlockCreate = z.object({ username: Username }).meta({ id: 'BlockCreate' });
 
 // Trích dẫn đọc từ tin gốc lúc truy vấn (không lưu bản sao). Tin gốc thu hồi hoặc bị tôi ẩn:
@@ -19,6 +24,10 @@ export const BlockCreate = z.object({ username: Username }).meta({ id: 'BlockCre
 export const ReplyPreview = z
   .object({ id: Id, senderId: Id, available: z.boolean(), body: z.string().max(200).nullable() })
   .meta({ id: 'ReplyPreview' });
+
+export const Reaction = z
+  .object({ emoji: z.string().min(1).max(8), count: z.number().int().positive(), mine: z.boolean() })
+  .meta({ id: 'Reaction' });
 
 export const Message = z
   .object({
@@ -32,6 +41,10 @@ export const Message = z
     deleted: z.boolean(),
     replyTo: ReplyPreview.nullable(),
     attachments: z.array(z.never()).max(0), // file sau MVP; chỉ [] trong v1
+    senderName: z.string().max(80).optional(),
+    reactions: z.array(Reaction).optional(),
+    status: z.enum(['sent', 'delivered', 'seen']).optional(),
+    editedAt: Timestamp.nullable().optional(),
     createdAt: Timestamp,
     updatedAt: Timestamp,
   })
@@ -41,6 +54,8 @@ export const SendMessageRequest = z
   .object({ clientMsgId: Id, body: z.string().min(1).max(10_000), replyToId: Id.nullable().default(null), attachments: z.array(z.never()).max(0).default([]) })
   .meta({ id: 'SendMessageRequest' });
 export const SendMessageResponse = z.object({ message: Message, duplicate: z.boolean() }).meta({ id: 'SendMessageResponse' });
+export const EditMessageRequest = z.object({ body: z.string().min(1).max(10_000) }).meta({ id: 'EditMessageRequest' });
+export const ReactionToggle = z.object({ emoji: z.string().min(1).max(8) }).meta({ id: 'ReactionToggle' });
 
 export const Conversation = z
   .object({
@@ -85,7 +100,7 @@ export const ReportCreate = z
 export const ReportAccepted = z.object({ reportId: Id, status: z.literal('received') }).meta({ id: 'ReportAccepted' });
 
 export const Change = z
-  .object({ seq: Seq, messageId: Id, kind: z.enum(['created', 'recalled', 'purged', 'redacted']), message: Message })
+  .object({ seq: Seq, messageId: Id, kind: z.enum(['created', 'edited', 'recalled', 'purged', 'redacted']), message: Message })
   .meta({ id: 'Change' });
 export const EntityChange = z
   .object({ seq: Seq, entityType: z.enum(['profile', 'settings', 'device', 'friend_request', 'friendship', 'block', 'conversation', 'message_visibility']), entityId: Id, kind: z.enum(['upsert', 'delete']) })

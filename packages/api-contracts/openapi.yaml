@@ -258,17 +258,22 @@ paths:
                 $ref: "#/components/schemas/Error"
   /v1/auth/logout:
     post:
-      summary: Đăng xuất thiết bị hiện tại
-      security:
-        - bearer: []
-      x-auth: token
+      summary: Thu hồi family refresh token hiện tại
+      security: []
+      x-auth: public
       x-idempotency: natural
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
       responses:
         "204":
           description: No Content
-        "401":
-          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+        "400":
+          description: VALIDATION_FAILED
           content:
             application/json:
               schema:
@@ -957,6 +962,75 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/users:
+    get:
+      summary: Tài khoản discoverable đủ điều kiện gửi lời mời
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 60/giờ; IP 120/giờ
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 80
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicUser"
+                  nextCursor:
+                    nullable: true
+                    type: string
+                    maxLength: 512
+                    pattern: ^[A-Za-z0-9_-]+$
+                required:
+                  - items
+                  - nextCursor
+                additionalProperties: false
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/friend-requests:
     post:
       summary: Gửi lời mời; luôn 202 (kể cả bị chặn)
@@ -1611,6 +1685,112 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/messages/{messageId}:
+    patch:
+      summary: Sửa tin văn bản của tôi
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditMessageRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/messages/{messageId}/reactions:
+    post:
+      summary: Bật/tắt reaction của tôi
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactionToggle"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/conversations/{conversationId}/messages/{messageId}/recall:
     post:
       summary: Thu hồi (người gửi, ≤24h)
@@ -2113,6 +2293,25 @@ components:
         - password
         - deviceName
       additionalProperties: false
+    AuthenticatedUser:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        picture:
+          type: string
+          format: uri
+      required:
+        - name
+        - email
+      additionalProperties: false
     TokenPair:
       type: object
       properties:
@@ -2143,6 +2342,9 @@ components:
           type: string
           minLength: 32
           maxLength: 512
+        user:
+          allOf:
+            - $ref: "#/components/schemas/AuthenticatedUser"
       required:
         - scope
         - accessToken
@@ -2579,6 +2781,25 @@ components:
       required:
         - username
       additionalProperties: false
+    UserDirectoryQuery:
+      type: object
+      properties:
+        q:
+          type: string
+          minLength: 2
+          maxLength: 80
+        cursor:
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+        limit:
+          default: 30
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+        - limit
+      additionalProperties: false
     BlockCreate:
       type: object
       properties:
@@ -2609,6 +2830,25 @@ components:
         - senderId
         - available
         - body
+      additionalProperties: false
+    Reaction:
+      type: object
+      properties:
+        emoji:
+          type: string
+          minLength: 1
+          maxLength: 8
+        count:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 9007199254740991
+        mine:
+          type: boolean
+      required:
+        - emoji
+        - count
+        - mine
       additionalProperties: false
     Message:
       type: object
@@ -2647,6 +2887,24 @@ components:
           type: array
           items:
             not: {}
+        senderName:
+          type: string
+          maxLength: 80
+        reactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reaction"
+        status:
+          type: string
+          enum:
+            - sent
+            - delivered
+            - seen
+        editedAt:
+          nullable: true
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
         createdAt:
           type: string
           format: date-time
@@ -2708,6 +2966,26 @@ components:
       required:
         - message
         - duplicate
+      additionalProperties: false
+    EditMessageRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+      required:
+        - body
+      additionalProperties: false
+    ReactionToggle:
+      type: object
+      properties:
+        emoji:
+          type: string
+          minLength: 1
+          maxLength: 8
+      required:
+        - emoji
       additionalProperties: false
     Conversation:
       type: object
@@ -2894,6 +3172,7 @@ components:
           type: string
           enum:
             - created
+            - edited
             - recalled
             - purged
             - redacted

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent, IconName } from '../../shared/icon.component';
 import { AppearanceMenuComponent } from '../appearance-menu/appearance-menu.component';
 
@@ -46,7 +45,7 @@ const SECTIONS: NavSection[] = [
 @Component({
   selector: 'app-nav-sidebar',
   standalone: true,
-  imports: [TranslocoPipe, AvatarComponent, IconComponent, AppearanceMenuComponent],
+  imports: [TranslocoPipe, IconComponent, AppearanceMenuComponent],
   templateUrl: './nav-sidebar.component.html',
   styleUrl: './nav-sidebar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +53,8 @@ const SECTIONS: NavSection[] = [
 export class NavSidebarComponent {
   @Input() unread = 0;
   @Input() userName = '';
+  @Input() userEmail = '';
+  @Input() userUsername = '';
   @Output() readonly logoutRequested = new EventEmitter<void>();
 
   readonly sections = SECTIONS;
@@ -62,6 +63,7 @@ export class NavSidebarComponent {
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
 
   logout(): void {
+    this.appearanceOpen.set(false);
     this.logoutRequested.emit();
   }
 
@@ -78,6 +80,11 @@ export class NavSidebarComponent {
     if (!event.target.closest('.nav__menu, .me__settings')) {
       this.appearanceOpen.set(false);
     }
+  }
+
+  @HostListener('document:keydown.escape')
+  closeAppearanceOnEscape(): void {
+    this.appearanceOpen.set(false);
   }
 
   toggleSection(titleKey: string): void {

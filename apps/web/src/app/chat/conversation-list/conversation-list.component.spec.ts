@@ -13,6 +13,7 @@ class EmptyLoader implements TranslocoLoader {
 
 import { Conversation } from '../chat.models';
 import { ChatService } from '../chat.service';
+import { UiFeedbackService } from '../../shared/ui-feedback.service';
 import { ConversationListComponent } from './conversation-list.component';
 
 const base: Conversation = {
@@ -34,10 +35,17 @@ const base: Conversation = {
 
 function setup(list: Conversation[]) {
   const conversations = signal(list);
+  const friends = signal([]);
+  const incomingFriendRequests = signal([]);
+  const outgoingFriendRequests = signal([]);
   TestBed.configureTestingModule({
     providers: [
       provideHttpClient(),
       provideTransloco({ config: { availableLangs: ['vi'], defaultLang: 'vi' }, loader: EmptyLoader }),
+      {
+        provide: UiFeedbackService,
+        useValue: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn(), confirm: vi.fn() },
+      },
       {
         provide: ChatService,
         useValue: {
@@ -45,6 +53,11 @@ function setup(list: Conversation[]) {
           selectedId: signal(null),
           conversations,
           sortedConversations: conversations,
+          friends,
+          incomingFriendRequests,
+          outgoingFriendRequests,
+          discoverUsers: () => Promise.resolve({ items: [], nextCursor: null }),
+          refreshRelationships: () => Promise.resolve(),
           load: () => Promise.resolve(),
         },
       },

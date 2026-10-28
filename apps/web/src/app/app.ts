@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Inject, OnInit, Signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { AuthStore } from './auth/auth.store';
 import { Conversation, Message } from './chat/chat.models';
@@ -8,6 +8,7 @@ import { ChatWindowComponent } from './chat/chat-window/chat-window.component';
 import { ChatService } from './chat/chat.service';
 import { ConversationListComponent } from './chat/conversation-list/conversation-list.component';
 import { ThemeService } from './shared/theme.service';
+import { UiFeedbackService } from './shared/ui-feedback.service';
 import { NavSidebarComponent } from './shell/nav-sidebar/nav-sidebar.component';
 
 @Component({
@@ -24,6 +25,8 @@ export class App implements OnInit {
   readonly typingId: Signal<string | null>;
   readonly totalUnread: Signal<number>;
   readonly meName: Signal<string>;
+  readonly meEmail: Signal<string>;
+  readonly meUsername: Signal<string>;
 
   // ThemeService được inject để effect áp dụng theme/wallpaper chạy ngay khi khởi động.
   constructor(
@@ -31,6 +34,8 @@ export class App implements OnInit {
     private readonly theme: ThemeService,
     @Inject(AuthStore) private readonly auth: InstanceType<typeof AuthStore>,
     private readonly router: Router,
+    private readonly feedback: UiFeedbackService,
+    private readonly transloco: TranslocoService,
   ) {
     void this.theme;
     this.selected = chat.selected;
@@ -38,6 +43,8 @@ export class App implements OnInit {
     this.typingId = chat.typingId;
     this.totalUnread = chat.totalUnread;
     this.meName = computed(() => this.auth.user()?.name ?? chat.meName);
+    this.meEmail = computed(() => this.auth.user()?.email ?? '');
+    this.meUsername = chat.meUsername;
   }
 
   ngOnInit(): void {
@@ -45,8 +52,14 @@ export class App implements OnInit {
   }
 
   async logout(): Promise<void> {
-    await this.auth.logout();
-    await this.router.navigateByUrl('/auth/login');
+    try {
+      await this.auth.logout();
+    } catch (error) {
+      console.error('Không thu hồi được phiên ở máy chủ', error);
+      this.feedback.error(this.transloco.translate('common.actionError'));
+    } finally {
+      await this.router.navigateByUrl('/auth/login');
+    }
   }
 
   open(id: string): void {

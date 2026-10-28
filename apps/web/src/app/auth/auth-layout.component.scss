@@ -240,7 +240,6 @@
     height: 100%;
     object-fit: contain;
     filter: drop-shadow(0 14px 18px rgb(3 35 89 / 26%));
-    animation: mascot-float 5s ease-in-out infinite;
   }
 
   /* Bong bóng trạng thái của mascot */
@@ -464,17 +463,6 @@
 
   &__footer-note {
     justify-self: end;
-  }
-}
-
-@keyframes mascot-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-6px);
   }
 }
 

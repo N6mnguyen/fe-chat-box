@@ -2,7 +2,8 @@
   "common": {
     "soon": "Sắp có",
     "close": "Đóng",
-    "loading": "Đang tải..."
+    "loading": "Đang tải...",
+    "actionError": "Không thực hiện được yêu cầu. Vui lòng thử lại."
   },
   "nav": {
     "label": "Điều hướng chính",
@@ -35,8 +36,14 @@
     "lotus": "Sen",
     "night": "Đêm"
   },
+  "settings": {
+    "title": "Cài đặt"
+  },
   "me": {
     "status": "Đang hoạt động",
+    "account": "Tài khoản",
+    "accountFallback": "Người dùng",
+    "username": "Tên người dùng",
     "logout": "Đăng xuất"
   },
   "auth": {
@@ -162,7 +169,38 @@
     "muteNotifications": "Tắt thông báo",
     "unmuteNotifications": "Bật thông báo",
     "pinned": "Đã ghim",
-    "muted": "Đã tắt thông báo"
+    "muted": "Đã tắt thông báo",
+    "addFriend": "Thêm bạn",
+    "friends": "Thêm bạn bè và lời mời kết bạn",
+    "friendSearch": "Tìm tài khoản theo tên hoặc username",
+    "sendFriendRequest": "Gửi lời mời",
+    "sendingFriendRequest": "Đang gửi...",
+    "friendRequestHint": "Chỉ hiện tài khoản đang hoạt động và cho phép được tìm thấy.",
+    "friendRequestSubmitted": "Đã tiếp nhận yêu cầu. Nếu tên người dùng hợp lệ, lời mời sẽ được gửi.",
+    "friendSearchMinimum": "Nhập ít nhất 2 ký tự để tìm.",
+    "noDiscoverableUsers": "Chưa có tài khoản nào khác có thể kết bạn.",
+    "noFriendCandidates": "Không tìm thấy tài khoản phù hợp hoặc bạn đã gửi lời mời.",
+    "friendDirectoryError": "Không tải được danh sách tài khoản.",
+    "loadingFriends": "Đang tải tài khoản...",
+    "loadMoreFriends": "Tải thêm",
+    "refreshFriends": "Làm mới",
+    "autoRefresh": "Tự đồng bộ mỗi 5 giây; không cần tải lại trang.",
+    "incomingRequests": "Lời mời đến",
+    "acceptFriendRequest": "Chấp nhận",
+    "friendRequestAccepted": "Đã chấp nhận lời mời kết bạn.",
+    "declineFriendRequest": "Từ chối",
+    "friendRequestDeclined": "Đã từ chối lời mời.",
+    "noIncomingRequests": "Không có lời mời đến.",
+    "outgoingRequests": "Lời mời đã gửi",
+    "cancelFriendRequest": "Hủy lời mời",
+    "friendRequestCancelled": "Đã hủy lời mời.",
+    "noOutgoingRequests": "Không có lời mời đang chờ.",
+    "myFriends": "Bạn bè",
+    "removeFriend": "Xóa bạn",
+    "removeFriendTitle": "Xóa bạn bè?",
+    "removeFriendConfirm": "Bạn có chắc muốn xóa {{ name }} khỏi danh sách bạn bè? Lịch sử trò chuyện không bị xóa.",
+    "friendRemoved": "Đã xóa bạn bè.",
+    "noFriends": "Chưa có bạn bè."
   },
   "time": {
     "now": "Vừa xong",

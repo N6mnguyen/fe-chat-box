@@ -171,9 +171,16 @@ export const AuthStore = signalStore(
       },
 
       async logout(): Promise<void> {
-        clearStoredSession();
-        await secureTokens.clear();
-        patchState(store, { ...initialState });
+        try {
+          const refreshToken = await secureTokens.getRefreshToken();
+          if (refreshToken) {
+            await api.logout(refreshToken);
+          }
+        } finally {
+          clearStoredSession();
+          patchState(store, { ...initialState });
+          await secureTokens.clear();
+        }
       },
 
       clearError(): void {

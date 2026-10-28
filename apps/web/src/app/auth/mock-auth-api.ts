@@ -128,6 +128,11 @@ export class MockAuthApi implements AuthApi {
     return this.createSession();
   }
 
+  async logout(_refreshToken: string): Promise<void> {
+    await Promise.resolve();
+    void _refreshToken;
+  }
+
   private verifyOtp(request: OtpRequest, requireChallenge = true): void {
     if (this.scenario() === 'otp-invalid' || request.otp !== DEV_OTP) {
       throw new AuthApiError({ code: 'OTP_INVALID' });

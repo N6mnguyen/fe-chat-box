@@ -1,6 +1,20 @@
-<div class="menu">
-  <h2 class="menu__title">{{ 'appearance.title' | transloco }}</h2>
+<div class="menu" id="account-settings-menu" role="dialog" [attr.aria-label]="'settings.title' | transloco">
+  <div class="account">
+    <app-avatar [name]="userName" class="account__avatar" />
+    <div class="account__details">
+      <span class="account__label">{{ 'me.account' | transloco }}</span>
+      <strong class="account__name">{{ userName || ('me.accountFallback' | transloco) }}</strong>
+      @if (userEmail) {
+        <span class="account__email">{{ userEmail }}</span>
+      }
+      @if (userUsername) {
+        <span class="account__username">{{ 'me.username' | transloco }}: @{{ userUsername }}</span>
+      }
+    </div>
+  </div>
 
+  <hr class="menu__divider" />
+  <h2 class="menu__title">{{ 'settings.title' | transloco }}</h2>
   <p class="menu__label" id="theme-label">{{ 'appearance.theme' | transloco }}</p>
   <div class="options" role="radiogroup" aria-labelledby="theme-label">
     @for (mode of modes; track mode) {
@@ -33,4 +47,10 @@
       </button>
     }
   </div>
+
+  <hr class="menu__divider" />
+  <button type="button" class="logout" (click)="logout()">
+    <app-icon name="logout" />
+    <span>{{ 'me.logout' | transloco }}</span>
+  </button>
 </div>

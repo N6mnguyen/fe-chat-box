@@ -27,6 +27,11 @@
   --color-bubble-other: #fff;
   --color-danger: #b42318;
   --color-danger-contrast: #fff;
+  --color-success: #16794b;
+  --color-warning: #9a5b00;
+  --color-info: #1d4ed8;
+  --color-overlay: rgb(5 10 20 / 48%);
+  --color-overlay-strong: rgb(0 0 0 / 82%);
   --color-online: #16a34a;
   --color-hover: rgb(20 27 42 / 7%);
   --shadow-pop: 0 8px 24px rgb(20 27 42 / 18%);
@@ -52,6 +57,11 @@
   --color-bubble-other: #1a2130;
   --color-danger: #ff8a80;
   --color-danger-contrast: #0b0e14;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-info: #8ab4ff;
+  --color-overlay: rgb(0 0 0 / 64%);
+  --color-overlay-strong: rgb(0 0 0 / 86%);
   --color-online: #34d399;
   --color-hover: rgb(255 255 255 / 8%);
   --shadow-pop: 0 8px 24px rgb(0 0 0 / 55%);
@@ -125,8 +135,92 @@ textarea {
   font: inherit;
 }
 
-// Overlay gắn vào body: dùng token vì SCSS của component không bao phủ được.
-.forward-modal {
+// Overlay gắn vào body: dùng chung token để popup luôn theo theme hiện tại.
+.ant-message {
+  top: max(20px, env(safe-area-inset-top)) !important;
+  z-index: 1200;
+  padding: 0 var(--space-4);
+}
+
+.app-notice {
+  width: fit-content;
+  max-width: min(520px, calc(100vw - 32px));
+  margin: 0 auto var(--space-2);
+  padding: 0;
+  text-align: left;
+
+  .ant-message-notice-content {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 48px;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-raised);
+    box-shadow: var(--shadow-pop);
+    color: var(--color-text);
+    white-space: normal;
+  }
+
+  .ant-message-custom-content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
+
+  .anticon {
+    flex: none;
+    margin-top: 2px;
+    margin-inline-end: 0;
+  }
+
+  &--success .ant-message-notice-content {
+    border-color: color-mix(in srgb, var(--color-success) 32%, var(--color-border));
+    background: color-mix(in srgb, var(--color-success) 7%, var(--color-raised));
+  }
+
+  &--success .anticon {
+    color: var(--color-success);
+  }
+
+  &--error .ant-message-notice-content {
+    border-color: color-mix(in srgb, var(--color-danger) 32%, var(--color-border));
+    background: color-mix(in srgb, var(--color-danger) 7%, var(--color-raised));
+  }
+
+  &--error .anticon {
+    color: var(--color-danger);
+  }
+
+  &--warning .ant-message-notice-content {
+    border-color: color-mix(in srgb, var(--color-warning) 32%, var(--color-border));
+    background: color-mix(in srgb, var(--color-warning) 7%, var(--color-raised));
+  }
+
+  &--warning .anticon {
+    color: var(--color-warning);
+  }
+
+  &--info .ant-message-notice-content {
+    border-color: color-mix(in srgb, var(--color-info) 32%, var(--color-border));
+    background: color-mix(in srgb, var(--color-info) 7%, var(--color-raised));
+  }
+
+  &--info .anticon {
+    color: var(--color-info);
+  }
+}
+
+.ant-modal-mask {
+  background: var(--color-overlay);
+  backdrop-filter: blur(2px);
+}
+
+.app-modal {
   .ant-modal-content {
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -150,6 +244,11 @@ textarea {
 
   .ant-modal-close {
     color: var(--color-text-muted);
+
+    &:hover {
+      background: var(--color-hover);
+      color: var(--color-text);
+    }
   }
 
   .ant-modal-body {
@@ -158,6 +257,9 @@ textarea {
   }
 
   .ant-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
     padding: var(--space-3) var(--space-5);
     border-color: var(--color-border);
     background: var(--color-raised);
@@ -165,23 +267,31 @@ textarea {
     .ant-btn {
       min-width: 88px;
       height: 38px;
+      margin: 0;
       border-radius: var(--radius-sm);
+      font-weight: 600;
     }
 
-    .ant-btn + .ant-btn {
-      margin-inline-start: var(--space-2);
-    }
-  }
+    .ant-btn-default {
+      border-color: var(--color-border);
+      background: var(--color-bg-subtle);
+      color: var(--color-text);
 
-  .ant-input, .ant-btn-default {
-    background: var(--color-bg);
-    color: var(--color-text);
-    border-color: var(--color-border);
+      &:hover,
+      &:focus {
+        border-color: var(--color-link);
+        background: var(--color-primary-soft);
+        color: var(--color-link);
+      }
+    }
   }
 
   .ant-input {
     min-height: 40px;
     border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-color: var(--color-border);
 
     &:hover,
     &:focus {
@@ -212,16 +322,7 @@ textarea {
   }
 }
 
-.delete-confirm-modal {
-  .ant-modal-content {
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-raised);
-    color: var(--color-text);
-    box-shadow: var(--shadow-pop);
-  }
-
+.app-modal--confirm {
   .ant-modal-body {
     padding: var(--space-3) var(--space-5) var(--space-4);
     background: var(--color-raised);
@@ -240,8 +341,8 @@ textarea {
       height: 36px;
       margin: 0 var(--space-3) var(--space-2) 0;
       border-radius: 50%;
-      background: color-mix(in srgb, var(--color-danger) 12%, transparent);
-      color: var(--color-danger);
+      background: var(--color-primary-soft);
+      color: var(--color-link);
       font-size: 18px;
     }
 
@@ -288,47 +389,42 @@ textarea {
         color: var(--color-link);
       }
     }
+  }
+}
 
-    .ant-btn-dangerous,
-    .ant-btn-primary.ant-btn-dangerous {
-      border-color: var(--color-danger);
-      background: var(--color-danger);
-      color: var(--color-danger-contrast);
+.app-modal--confirm-danger .ant-modal-confirm-body > .anticon {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-raised));
+  color: var(--color-danger);
+}
 
-      &:hover,
-      &:focus {
-        border-color: var(--color-danger);
-        background: var(--color-danger);
-        filter: brightness(1.08);
-      }
-    }
+.app-modal--confirm .ant-modal-confirm-btns .ant-btn-dangerous,
+.app-modal--confirm .ant-modal-confirm-btns .ant-btn-primary.ant-btn-dangerous {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-danger-contrast);
+
+  &:hover,
+  &:focus {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+    filter: brightness(1.08);
   }
 }
 
 @media (width < 560px) {
-  .forward-modal .ant-modal {
+  .app-modal .ant-modal {
     width: calc(100vw - 32px) !important;
     max-width: none;
     margin: 16px auto;
   }
 
-  .forward-modal .ant-modal-header,
-  .forward-modal .ant-modal-body,
-  .forward-modal .ant-modal-footer {
+  .app-modal .ant-modal-header,
+  .app-modal .ant-modal-body,
+  .app-modal .ant-modal-footer {
     padding-right: var(--space-4);
     padding-left: var(--space-4);
   }
 
-  .delete-confirm-modal .ant-modal {
-    width: calc(100vw - 32px) !important;
-    max-width: none;
-    margin: 16px auto;
-  }
-
-  .delete-confirm-modal .ant-modal-body {
-    padding-right: var(--space-4);
-    padding-left: var(--space-4);
-  }
 }
 
 
@@ -349,7 +445,7 @@ textarea {
 
 // Lightbox (CDK Dialog)
 .lightbox-backdrop {
-  background: rgb(0 0 0 / 82%);
+  background: var(--color-overlay-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {

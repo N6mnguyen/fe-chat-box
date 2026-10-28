@@ -32,6 +32,10 @@ export const LoginRequest = z
   })
   .meta({ id: 'LoginRequest' });
 
+export const AuthenticatedUser = z
+  .object({ name: z.string().min(1).max(80), email: Email, picture: z.string().url().optional() })
+  .meta({ id: 'AuthenticatedUser' });
+
 export const TokenPair = z
   .object({
     // 'full': mọi API. 'restore': tài khoản đang deleting, chỉ gọi được GET /v1/me và POST /v1/me/restore;
@@ -43,6 +47,7 @@ export const TokenPair = z
     refreshExpiresAt: Timestamp,
     deviceId: Id,
     deviceToken: Secret.optional(), // chỉ có khi vừa cấp mới
+    user: AuthenticatedUser.optional(),
   })
   .meta({ id: 'TokenPair' });
 
