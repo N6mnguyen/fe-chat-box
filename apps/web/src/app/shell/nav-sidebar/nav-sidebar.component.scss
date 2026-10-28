@@ -1,0 +1,321 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-sidebar-bg);
+  --avatar-ring: var(--color-sidebar-bg);
+
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    padding: var(--space-4) var(--space-3);
+    overflow: hidden auto;
+  }
+
+  &__foot {
+    position: relative;
+    padding: var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  // Menu giao diện nổi phía trên chân sidebar, không chiếm diện tích bố cục.
+  &__menu {
+    position: absolute;
+    right: var(--space-3);
+    bottom: calc(100% + var(--space-2));
+    left: var(--space-3);
+    z-index: 5;
+    min-width: 240px;
+  }
+}
+
+.section {
+  margin-bottom: var(--space-4);
+
+  &__heading {
+    margin: 0 0 var(--space-2);
+  }
+
+  // Tiêu đề nhóm là nút bấm để thu gọn / mở rộng.
+  &__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-1) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-hover);
+    }
+  }
+
+  &__chevron {
+    font-size: 14px;
+    transition: transform 0.15s;
+  }
+
+  &--collapsed &__chevron {
+    transform: rotate(-90deg);
+  }
+
+  // Chỉ thu gọn khi sidebar đầy đủ; cột icon luôn hiện đủ mục.
+  &--collapsed &__list {
+    display: none;
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--color-hover);
+  }
+
+  &:disabled {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  &--active,
+  &--active:hover {
+    background: var(--color-primary-soft);
+    font-weight: 600;
+  }
+
+  &__icon {
+    flex: none;
+    font-size: 18px;
+  }
+
+  &__label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__soon {
+    flex: none;
+    padding: 1px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-text-muted);
+    font-size: 10px;
+  }
+}
+
+.badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.me {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  --avatar-size: 40px;
+
+  &__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__status {
+    color: var(--color-online);
+    font-size: 12px;
+  }
+
+  &__settings {
+    display: inline-flex;
+    flex: none;
+    padding: var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+
+    &:hover,
+    &--on {
+      background: var(--color-hover);
+      color: var(--color-text);
+    }
+  }
+}
+
+// Cột icon 64px (tablet / desktop hẹp): ẩn nhãn, giữ tooltip và aria-label.
+@media (width < 1280px) {
+  .nav {
+    &__scroll {
+      padding: var(--space-3) var(--space-2);
+    }
+
+    // Cột 64px quá hẹp: menu nổi sang bên phải.
+    &__menu {
+      position: absolute;
+      bottom: var(--space-2);
+      left: calc(100% + var(--space-2));
+      z-index: 5;
+      width: 260px;
+      margin: 0;
+    }
+  }
+
+  .section {
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+
+    &__heading {
+      display: none;
+    }
+
+    &--collapsed &__list {
+      display: block;
+    }
+  }
+
+  .item {
+    justify-content: center;
+    padding: 0;
+
+    &__label,
+    &__soon {
+      display: none;
+    }
+  }
+
+  .badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    line-height: 16px;
+  }
+
+  .me {
+    flex-direction: column;
+
+    &__text {
+      display: none;
+    }
+  }
+}
+
+// Mobile: thanh điều hướng dưới, chỉ giữ mục đã làm + cài đặt.
+@media (width < 768px) {
+  .nav {
+    flex-direction: row;
+    border-top: 1px solid var(--color-border);
+
+    &__scroll {
+      display: flex;
+      flex: 1;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    &__foot {
+      padding: 0 var(--space-2);
+      border-top: 0;
+    }
+
+    &__menu {
+      right: var(--space-2);
+      bottom: calc(100% + var(--space-2));
+      left: var(--space-2);
+      width: auto;
+    }
+  }
+
+  .section {
+    display: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+
+    &:first-child {
+      display: block;
+      flex: 1;
+    }
+
+    &__heading {
+      display: none;
+    }
+
+    &__list,
+    &--collapsed &__list {
+      display: flex;
+      justify-content: space-around;
+    }
+
+    // Mobile chỉ hiển thị mục Tin nhắn; các mục "Sắp có" ẩn đi.
+    li:not(:first-child) {
+      display: none;
+    }
+  }
+
+  .item {
+    height: 56px;
+    padding: 0 var(--space-5);
+  }
+
+  .me {
+    height: 56px;
+
+    &__avatar {
+      display: none;
+    }
+  }
+}

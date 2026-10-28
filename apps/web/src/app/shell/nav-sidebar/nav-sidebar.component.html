@@ -1,0 +1,67 @@
+<nav class="nav" [attr.aria-label]="'nav.label' | transloco">
+  <div class="nav__scroll">
+    @for (section of sections; track section.titleKey) {
+      <section class="section" [class.section--collapsed]="collapsed().has(section.titleKey)">
+        <h2 class="section__heading">
+          <button
+            type="button"
+            class="section__title"
+            [attr.aria-expanded]="!collapsed().has(section.titleKey)"
+            (click)="toggleSection(section.titleKey)"
+          >
+            {{ section.titleKey | transloco }}
+            <app-icon name="arrow-down" class="section__chevron" />
+          </button>
+        </h2>
+        <ul class="section__list">
+          @for (item of section.items; track item.key) {
+            <li>
+              <button
+                type="button"
+                class="item"
+                [class.item--active]="!item.soon"
+                [disabled]="item.soon"
+                [attr.aria-current]="item.soon ? null : 'page'"
+                [attr.aria-label]="'nav.' + item.key | transloco"
+                [title]="('nav.' + item.key | transloco) + (item.soon ? ' · ' + ('common.soon' | transloco) : '')"
+              >
+                <app-icon [name]="item.icon" class="item__icon" />
+                <span class="item__label">{{ 'nav.' + item.key | transloco }}</span>
+                @if (item.key === 'messages' && unread > 0) {
+                  <span class="badge" [attr.aria-label]="'nav.totalUnread' | transloco: { n: unread }">{{ unreadLabel(unread) }}</span>
+                }
+                @if (item.soon) {
+                  <span class="item__soon">{{ 'common.soon' | transloco }}</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  <div class="nav__foot">
+    @if (appearanceOpen()) {
+      <div class="nav__menu"><app-appearance-menu /></div>
+    }
+    <div class="me">
+      <app-avatar [name]="userName" [online]="true" [showPresence]="true" class="me__avatar" />
+      <span class="me__text">
+        <span class="me__name">{{ userName }}</span>
+        <span class="me__status">{{ 'me.status' | transloco }}</span>
+      </span>
+      <button
+        type="button"
+        class="me__settings"
+        [class.me__settings--on]="appearanceOpen()"
+        [attr.aria-expanded]="appearanceOpen()"
+        [attr.aria-label]="'appearance.title' | transloco"
+        [title]="'appearance.title' | transloco"
+        (click)="toggleAppearance()"
+      >
+        <app-icon name="settings" />
+      </button>
+    </div>
+  </div>
+</nav>

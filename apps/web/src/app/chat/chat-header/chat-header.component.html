@@ -1,0 +1,79 @@
+<header class="head">
+  <button
+    type="button"
+    class="icon-btn head__back"
+    [attr.aria-label]="'header.back' | transloco"
+    [title]="'header.back' | transloco"
+    (click)="backRequested.emit()"
+  >
+    <app-icon name="back" />
+  </button>
+
+  <app-avatar [name]="conversation.name" [online]="conversation.online" [showPresence]="!conversation.isGroup" />
+
+  <div class="head__text">
+    <div class="head__title">
+      <h2 class="head__name" [title]="conversation.name">{{ conversation.name }}</h2>
+      @if (conversation.tag) {
+        <span class="head__tag" [title]="conversation.tag">{{ conversation.tag }}</span>
+      }
+    </div>
+    <p class="head__status" [title]="memberLine">
+      @if (conversation.isGroup) {
+        {{ 'header.members' | transloco: { n: conversation.memberCount } }} · {{ memberLine }}
+      } @else if (conversation.online) {
+        <span class="head__online">{{ 'header.online' | transloco }}</span>
+      } @else {
+        {{ 'header.offline' | transloco }}
+      }
+    </p>
+  </div>
+
+  <div class="head__actions">
+    <button type="button" class="text-btn" [attr.aria-label]="'header.call' | transloco" [title]="'header.call' | transloco">
+      <app-icon name="phone" /><span class="text-btn__label">{{ 'header.callShort' | transloco }}</span>
+    </button>
+    <button type="button" class="text-btn" [attr.aria-label]="'header.video' | transloco" [title]="'header.video' | transloco">
+      <app-icon name="video" /><span class="text-btn__label">{{ 'header.videoShort' | transloco }}</span>
+    </button>
+    <button
+      type="button"
+      class="icon-btn"
+      [class.icon-btn--on]="searchOpen()"
+      [attr.aria-pressed]="searchOpen()"
+      [attr.aria-label]="'header.search' | transloco"
+      [title]="'header.search' | transloco"
+      (click)="toggleSearch()"
+    >
+      <app-icon name="search" />
+    </button>
+    <button
+      type="button"
+      class="icon-btn"
+      [class.icon-btn--on]="infoOpen"
+      [attr.aria-pressed]="infoOpen"
+      [attr.aria-label]="'header.info' | transloco"
+      [title]="'header.info' | transloco"
+      (click)="infoToggled.emit()"
+    >
+      <app-icon name="info" />
+    </button>
+  </div>
+</header>
+
+@if (searchOpen()) {
+  <form class="searchbar" [formGroup]="searchForm" role="search" (submit)="$event.preventDefault()">
+    <input
+      class="searchbar__input"
+      type="search"
+      formControlName="query"
+      autocomplete="off"
+      [placeholder]="'header.searchPlaceholder' | transloco"
+      [attr.aria-label]="'header.searchPlaceholder' | transloco"
+      (input)="onSearchInput()"
+    />
+    <button type="button" class="icon-btn" [attr.aria-label]="'header.searchClose' | transloco" (click)="toggleSearch()">
+      <app-icon name="close" />
+    </button>
+  </form>
+}

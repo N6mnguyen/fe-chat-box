@@ -1,0 +1,22 @@
+<div class="shell" [class.shell--chat]="selected()">
+  <div class="shell__nav">
+    <app-nav-sidebar [unread]="totalUnread()" [userName]="meName" />
+  </div>
+
+  <div class="shell__list">
+    <app-conversation-list (conversationOpened)="open($event)" />
+  </div>
+
+  <main class="shell__chat">
+    @if (selected(); as conversation) {
+      <app-chat-window
+        [conversation]="conversation"
+        [messages]="messages()"
+        [typing]="typingId() === conversation.id"
+        (backRequested)="close()"
+      />
+    } @else {
+      <p class="shell__empty">{{ 'shell.selectPrompt' | transloco }}</p>
+    }
+  </main>
+</div>

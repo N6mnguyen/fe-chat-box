@@ -1,0 +1,286 @@
+<div class="wrap">
+  <div
+    #scroller
+    class="scroller"
+    role="log"
+    aria-live="polite"
+    [attr.aria-label]="'messages.label' | transloco"
+    (scroll)="onScroll()"
+  >
+    @if (rows.length === 0) {
+      <div class="empty" role="status">
+        <p class="empty__title">{{ (searching ? 'messages.noResult' : 'messages.empty') | transloco }}</p>
+        @if (!searching) {
+          <p class="empty__hint">{{ 'messages.emptyHint' | transloco }}</p>
+        }
+      </div>
+    }
+
+    @for (row of rows; track row.key) {
+      @if (row.kind === 'day') {
+        <div class="day"><span class="day__label">{{ row.labelKey ? (row.labelKey | transloco) : row.date }}</span></div>
+      } @else {
+        <div class="row" [class.row--mine]="row.mine" [class.row--end]="row.showTime" [attr.data-message-id]="row.message.id" tabindex="-1">
+          @if (!row.mine) {
+            <span class="row__avatar">
+              @if (row.showAvatar) {
+                <app-avatar [name]="row.message.senderName" [seed]="row.message.senderId" />
+              }
+            </span>
+          }
+
+          <div class="row__content" [cdkContextMenuTriggerFor]="actions" [cdkContextMenuTriggerData]="{ $implicit: row }">
+            <div class="react-pop">
+              <button
+                type="button"
+                class="react-pop__btn"
+                [cdkMenuTriggerFor]="actions"
+                [cdkMenuTriggerData]="{ $implicit: row }"
+                [attr.aria-label]="'messages.actions' | transloco"
+                [title]="'messages.actions' | transloco"
+              >
+                <app-icon name="more" />
+              </button>
+              <button
+                type="button"
+                class="react-pop__btn"
+                [attr.aria-expanded]="pickerId() === row.message.id"
+                [attr.aria-label]="'messages.react' | transloco"
+                [title]="'messages.react' | transloco"
+                (click)="togglePicker(row.message.id)"
+              >
+                <app-icon name="emoji" />
+              </button>
+              @if (pickerId() === row.message.id) {
+                <ul class="react-pop__list" role="menu" [attr.aria-label]="'messages.react' | transloco">
+                  @for (emoji of quickReactions; track emoji) {
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="react-pop__emoji"
+                        [attr.aria-label]="'messages.reactWith' | transloco: { emoji: emoji }"
+                        (click)="react(row.message.id, emoji)"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            @if (row.senderLabel) {
+              <span class="row__sender">{{ row.senderLabel }}</span>
+            }
+
+            @if (row.message.forwardedFrom) {
+              <span class="row__forwarded">{{ 'messages.forwarded' | transloco }}</span>
+            }
+            @if (row.message.replyTo; as reply) {
+              <button type="button" class="quote" [attr.aria-label]="'messages.jumpQuote' | transloco" (click)="jumpToMessage(reply.messageId)">
+                <span class="quote__name">{{ reply.senderName }}</span>
+                <span class="quote__text">{{ reply.text || ('messages.unavailable' | transloco) }}</span>
+              </button>
+            }
+
+            <div
+              class="bubble"
+              [class.bubble--mine]="row.mine"
+              [class.bubble--media]="row.message.type === 'image'"
+              [attr.data-pos]="row.position"
+            >
+              @if (row.message.recalledAt) {
+                <span class="text">{{ 'messages.recalled' | transloco }}</span>
+              } @else {
+              @switch (row.message.type) {
+                @case ('image') {
+                  @if (row.message.attachment; as img) {
+                    <button
+                      type="button"
+                      class="image-btn"
+                      [style.aspect-ratio]="row.ratio"
+                      [attr.aria-label]="'messages.openImage' | transloco: { name: img.name }"
+                      (click)="openImage(img)"
+                    >
+                      <img class="image" [src]="img.url" [alt]="img.name" loading="lazy" />
+                    </button>
+                  }
+                }
+                @case ('file') {
+                  @if (row.message.attachment; as file) {
+                    <div class="file">
+                      <app-icon name="file" class="file__icon" />
+                      <span class="file__meta">
+                        <span class="file__name" [title]="file.name">{{ file.name }}</span>
+                        <span class="file__size">{{ row.sizeLabel }}</span>
+                      </span>
+                      <a
+                        class="file__download"
+                        [href]="file.url"
+                        [download]="file.name"
+                        [attr.aria-label]="'info.download' | transloco: { name: file.name }"
+                        [title]="'info.download' | transloco: { name: file.name }"
+                      >
+                        <app-icon name="download" />
+                      </a>
+                    </div>
+                  }
+                }
+                @default {
+                  @if (editingId() === row.message.id) {
+                    <div class="edit">
+                      <textarea
+                        class="edit__input"
+                        rows="2"
+                        cdkFocusInitial
+                        [value]="editText()"
+                        [attr.aria-label]="'messages.editLabel' | transloco"
+                        (input)="updateEdit($event)"
+                        (keydown)="onEditKeydown($event)"
+                      ></textarea>
+                      <div class="edit__actions">
+                        <button type="button" class="edit__btn" (click)="cancelEdit()">{{ 'messages.cancel' | transloco }}</button>
+                        <button type="button" class="edit__btn edit__btn--primary" [disabled]="!editText().trim()" (click)="saveEdit()">
+                          {{ 'messages.save' | transloco }}
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                  <p class="text">
+                    @for (part of row.parts; track $index) {
+                      @if (part.url) {
+                        <a [href]="part.url" target="_blank" rel="noopener noreferrer">{{ part.text }}</a>
+                      } @else {
+                        {{ part.text }}
+                      }
+                    }
+                  </p>
+                  }
+                }
+              }
+              }
+            </div>
+
+            @if (row.message.reactions; as reactions) {
+              <ul class="reactions">
+                @for (r of reactions; track r.emoji) {
+                  <li>
+                    <button
+                      type="button"
+                      class="reactions__chip"
+                      [class.reactions__chip--mine]="r.mine"
+                      [attr.aria-pressed]="!!r.mine"
+                      [attr.aria-label]="'messages.reactWith' | transloco: { emoji: r.emoji }"
+                      (click)="react(row.message.id, r.emoji)"
+                    >
+                      {{ r.emoji }} {{ r.count }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (row.showTime || row.canRetry) {
+              <div class="meta">
+                <time>{{ row.message.createdAt | date: 'HH:mm' }}</time>
+                @if (row.message.editedAt) {
+                  <span>{{ 'messages.edited' | transloco }}</span>
+                }
+                @if (row.mine && row.isLastMine) {
+                  <span class="meta__status" [class.meta__status--error]="row.canRetry">
+                    @switch (row.message.status) {
+                      @case ('sending') {
+                        <app-icon name="clock" />
+                      }
+                      @case ('sent') {
+                        <app-icon name="check" />
+                      }
+                      @case ('failed') {
+                        <app-icon name="alert" />
+                      }
+                      @default {
+                        <app-icon name="checks" />
+                      }
+                    }
+                    {{ 'status.' + row.message.status | transloco }}
+                  </span>
+                }
+                @if (row.canRetry) {
+                  <button
+                    type="button"
+                    class="meta__retry"
+                    [attr.aria-label]="'messages.retrySend' | transloco"
+                    [title]="'messages.retrySend' | transloco"
+                    (click)="retry(row.message.id)"
+                  >
+                    <app-icon name="retry" />
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @if (typing) {
+      <div class="row row--end">
+        <span class="row__avatar"><app-avatar [name]="conversation.name" [seed]="conversation.id" /></span>
+        <div class="bubble typing" role="status" [attr.aria-label]="'messages.typing' | transloco: { name: conversation.name }">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (showJump()) {
+    <button type="button" class="jump" [attr.aria-label]="'messages.jumpLatest' | transloco" (click)="jumpToLatest()">
+      <app-icon name="arrow-down" />
+      @if (newCount() > 0) {
+        <span class="jump__count">{{ 'messages.jumpNew' | transloco: { n: newCount() } }}</span>
+      }
+    </button>
+  }
+</div>
+
+@if (lightbox(); as img) {
+  <div class="lightbox-backdrop lightbox" role="dialog" aria-modal="true" [attr.aria-label]="'lightbox.label' | transloco" (click)="onBackdropClick($event)" (keydown)="trapFocus($event)">
+    <button #closeButton type="button" class="lightbox__close" [attr.aria-label]="'lightbox.close' | transloco" (click)="closeImage()">
+      <app-icon name="close" />
+    </button>
+    <img class="lightbox__img" [src]="img.url" [alt]="img.name" />
+  </div>
+}
+
+<!-- Menu hành động theo tin: chuột phải hoặc nút "...". Mục hiện theo quyền của từng tin. -->
+<ng-template #actions let-row>
+  <div class="menu" cdkMenu [attr.aria-label]="'messages.actions' | transloco">
+    @if (row.canRetry) {
+      <button type="button" class="menu__item" cdkMenuItem (cdkMenuItemTriggered)="retry(row.message.id)">
+        <app-icon name="retry" /> {{ 'messages.retrySend' | transloco }}
+      </button>
+    }
+    @if (row.canShare) {
+      <button type="button" class="menu__item" cdkMenuItem (cdkMenuItemTriggered)="replyRequested.emit(row.message)">
+        <app-icon name="reply" /> {{ 'messages.reply' | transloco }}
+      </button>
+      <button type="button" class="menu__item" cdkMenuItem (cdkMenuItemTriggered)="forwardRequested.emit(row.message)">
+        <app-icon name="forward" /> {{ 'messages.forward' | transloco }}
+      </button>
+    }
+    @if (row.canEdit) {
+      <button type="button" class="menu__item" cdkMenuItem (cdkMenuItemTriggered)="startEdit(row)">
+        <app-icon name="edit" /> {{ 'messages.edit' | transloco }}
+      </button>
+    }
+    @if (row.canDeleteForAll) {
+      <button type="button" class="menu__item menu__item--danger" cdkMenuItem (cdkMenuItemTriggered)="confirmDelete(row.message.id, true)">
+        <app-icon name="trash" /> {{ 'messages.deleteForAll' | transloco }}
+      </button>
+    }
+    <button type="button" class="menu__item menu__item--danger" cdkMenuItem (cdkMenuItemTriggered)="confirmDelete(row.message.id, false)">
+      <app-icon name="trash" /> {{ 'messages.deleteForMe' | transloco }}
+    </button>
+  </div>
+</ng-template>

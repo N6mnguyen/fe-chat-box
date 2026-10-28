@@ -1,0 +1,201 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.window {
+  display: flex;
+  height: 100%;
+
+  &__main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__info {
+    flex: none;
+    width: 320px;
+  }
+}
+
+.forward {
+  &__preview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+    margin-bottom: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+  }
+
+  &__preview-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-primary-soft);
+    color: var(--color-link);
+    font-size: 18px;
+  }
+
+  &__preview-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.4;
+
+    strong {
+      margin-bottom: 2px;
+    }
+
+    span {
+      color: var(--color-text-muted);
+      display: -webkit-box;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+
+  &__section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+
+  &__search-label {
+    display: block;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  &__count {
+    flex: none;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+
+  &__search {
+    position: relative;
+
+    app-icon {
+      position: absolute;
+      top: 50%;
+      left: var(--space-3);
+      z-index: 1;
+      color: var(--color-text-muted);
+      font-size: 16px;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      padding-left: 40px;
+    }
+  }
+
+  &__targets {
+    display: grid;
+    gap: var(--space-1);
+    max-height: min(280px, 34vh);
+    overflow: hidden auto;
+    margin-top: var(--space-3);
+    padding: 2px var(--space-1) 2px 2px;
+  }
+
+  &__target {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-width: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+
+    &:hover {
+      background: var(--color-hover);
+      transform: translateY(-1px);
+    }
+
+    &--selected {
+      border-color: var(--color-link);
+      background: var(--color-primary-soft);
+    }
+
+    &:focus-within {
+      border-color: var(--color-link);
+    }
+
+    app-avatar {
+      --avatar-size: 32px;
+      flex: none;
+    }
+  }
+
+  &__checkbox {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0 var(--space-1) 0 0;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+  }
+
+  &__target-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__empty {
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+
+  &__empty {
+    padding: var(--space-5) var(--space-3);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    text-align: center;
+  }
+}
+
+// Màn hình nhỏ: panel thông tin phủ lên khung chat thay vì chia cột.
+@media (width < 1280px) {
+  .window {
+    position: relative;
+
+    &__info {
+      position: absolute;
+      inset: 0 0 0 auto;
+      z-index: 2;
+      width: min(320px, 100%);
+      box-shadow: -4px 0 16px rgb(0 0 0 / 12%);
+    }
+  }
+}

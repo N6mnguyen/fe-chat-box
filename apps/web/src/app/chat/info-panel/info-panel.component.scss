@@ -1,0 +1,126 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.panel {
+  height: 100%;
+  overflow-y: auto;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  &__who {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-4);
+    --avatar-size: 72px;
+  }
+
+  &__name {
+    margin: 0;
+    max-width: 100%;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+}
+
+.close {
+  display: inline-flex;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-hover);
+  }
+}
+
+.block {
+  padding: var(--space-3) var(--space-4);
+  border-top: 8px solid var(--color-bg-subtle);
+
+  &__title {
+    margin: 0 0 var(--space-2);
+    font-size: 14px;
+  }
+
+  &__none {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-1);
+
+  &__img {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+}
+
+.files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+  }
+
+  &__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__size {
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+
+  &__download {
+    display: inline-flex;
+    flex: none;
+    padding: var(--space-2);
+    border-radius: 50%;
+    color: var(--color-text);
+
+    &:hover {
+      background: var(--color-hover);
+    }
+  }
+}

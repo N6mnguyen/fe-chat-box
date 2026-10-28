@@ -1,0 +1,3083 @@
+openapi: 3.0.3
+info:
+  title: vchat API
+  version: 1.0.0
+  description: Sinh từ @vchat/api-contracts. Không sửa tay.
+servers:
+  - url: http://localhost:3000
+paths:
+  /v1/auth/register:
+    post:
+      summary: Đăng ký; luôn 202 cùng hình dạng
+      security: []
+      x-auth: public
+      x-rate-limit: IP 5/giờ, 20/ngày
+      x-idempotency: natural
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/verify-email:
+    post:
+      summary: Xác minh OTP đăng ký, cấp token
+      security: []
+      x-auth: public
+      x-rate-limit: 5 lần sai/mã; IP 30/giờ
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/resend-otp:
+    post:
+      summary: Gửi lại OTP; luôn 202
+      security: []
+      x-auth: public
+      x-rate-limit: email 5/giờ, 10/ngày, cách ≥60s; IP 20/ngày; thiết bị 10/ngày;
+        trần toàn hệ thống/ngày
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendOtpRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/login:
+    post:
+      summary: Đăng nhập; 200 TokenPair (scope full, hoặc restore nếu deleting) hoặc
+        OtpChallenge
+      security: []
+      x-auth: public
+      x-rate-limit: IP 20/phút & 200/giờ; identifier 10 lần sai/15 phút -> khóa tạm
+        1→5→15→60 phút; IP+identifier 5 sai/15 phút
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/login/verify-device:
+    post:
+      summary: Nhập OTP thiết bị mới
+      security: []
+      x-auth: public
+      x-rate-limit: 5 lần sai/mã; IP 30/giờ
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyDeviceRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/refresh:
+    post:
+      summary: Xoay vòng refresh; reuse thu hồi family
+      security: []
+      x-auth: public
+      x-rate-limit: thiết bị 30/phút
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/logout:
+    post:
+      summary: Đăng xuất thiết bị hiện tại
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters: []
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/password/forgot:
+    post:
+      summary: Gửi OTP reset; luôn 202
+      security: []
+      x-auth: public
+      x-rate-limit: email 5/giờ, 10/ngày, cách ≥60s; IP 20/ngày; thiết bị 10/ngày;
+        trần toàn hệ thống/ngày
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/password/reset:
+    post:
+      summary: Đặt lại mật khẩu, thu hồi mọi token
+      security: []
+      x-auth: public
+      x-rate-limit: 5 lần sai/mã; IP 30/giờ
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/auth/recover:
+    post:
+      summary: Khôi phục bằng mã khôi phục (sau MVP đợt đầu)
+      security: []
+      x-auth: public
+      x-rate-limit: IP 20/phút & 200/giờ; identifier 10 lần sai/15 phút -> khóa tạm
+        1→5→15→60 phút; IP+identifier 5 sai/15 phút
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoverRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me:
+    get:
+      summary: Hồ sơ + settings
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      summary: Xóa tài khoản (ân hạn 30 ngày)
+      security:
+        - bearer: []
+      x-auth: token+password
+      x-idempotency: natural
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordConfirm"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/profile:
+    patch:
+      summary: Sửa tên hiển thị (optimistic version)
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/settings:
+    patch:
+      summary: Settings + quyền riêng tư (optimistic version)
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/email/change:
+    post:
+      summary: OTP tới email mới; luôn 202
+      security:
+        - bearer: []
+      x-auth: token+password
+      x-rate-limit: email 5/giờ, 10/ngày, cách ≥60s; IP 20/ngày; thiết bị 10/ngày;
+        trần toàn hệ thống/ngày
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeEmailRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/email/confirm:
+    post:
+      summary: Xác nhận email mới; báo email cũ
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: 5 lần sai/mã; IP 30/giờ
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmEmailRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/password:
+    post:
+      summary: Đổi mật khẩu; đăng xuất thiết bị khác
+      security:
+        - bearer: []
+      x-auth: token+password
+      x-rate-limit: IP 20/phút & 200/giờ; identifier 10 lần sai/15 phút -> khóa tạm
+        1→5→15→60 phút; IP+identifier 5 sai/15 phút
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/devices:
+    get:
+      summary: Danh sách thiết bị
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceList"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/devices/{deviceId}:
+    delete:
+      summary: Đăng xuất từ xa; thu hồi refresh + deviceToken, ngắt WS
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/messages/purge:
+    post:
+      summary: ⚖ Xóa toàn bộ tin tôi đã gửi (job)
+      security:
+        - bearer: []
+      x-auth: token+password
+      x-idempotency: Idempotency-Key
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordConfirm"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobAccepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/messages/purge/{jobId}:
+    get:
+      summary: Trạng thái purge
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobAccepted"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/restore:
+    post:
+      summary: Hủy xóa trong ân hạn; nhận token scope restore; trả TokenPair scope
+        full mới
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/me/recovery-codes:
+    post:
+      summary: Tạo bộ 10 mã mới (vô hiệu bộ cũ); chỉ hiện một lần; KHÔNG idempotent
+      security:
+        - bearer: []
+      x-auth: token+password
+      x-rate-limit: user 5/ngày
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordConfirm"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodes"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/users/by-username/{username}:
+    get:
+      summary: Khớp chính xác; không tồn tại/chặn/không cho tìm -> 404
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 60/giờ; IP 120/giờ
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicUser"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests:
+    post:
+      summary: Gửi lời mời; luôn 202 (kể cả bị chặn)
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 30/ngày, tính cả lời mời suppressed; tối đa 100 lời mời đang
+        chờ (gồm suppressed)
+      x-idempotency: natural
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendRequestCreate"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests/incoming:
+    get:
+      summary: Lời mời đến (pending)
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequestPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests/outgoing:
+    get:
+      summary: Lời mời đi (pending, chỉ bản thật)
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequestPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests/{requestId}/accept:
+    post:
+      summary: Chấp nhận; tạo friendship + conversation
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests/{requestId}/decline:
+    post:
+      summary: Từ chối (người nhận)
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friend-requests/{requestId}/cancel:
+    post:
+      summary: Hủy (người gửi)
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friends:
+    get:
+      summary: Danh sách bạn
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/friends/{userId}:
+    delete:
+      summary: Hủy kết bạn
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/blocks:
+    get:
+      summary: Danh sách người tôi chặn
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Chặn; hủy bạn + lời mời chờ
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 60/giờ
+      x-idempotency: natural
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockCreate"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/blocks/{userId}:
+    delete:
+      summary: Bỏ chặn; không khôi phục bạn
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations:
+    get:
+      summary: Danh sách hội thoại
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 30
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Mở direct với bạn (get-or-create); group -> 422
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationCreate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}:
+    get:
+      summary: Chi tiết hội thoại
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      summary: Ghim / tắt thông báo (của tôi)
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/messages:
+    get:
+      summary: Lịch sử, mới -> cũ, cursor theo createdSeq
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 50
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessagePage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Gửi tin (REST fallback của message.send)
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 30/10s, 1.000/giờ; dùng chung giới hạn với WS message.send
+      x-idempotency: clientMsgId
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendMessageResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/messages/{messageId}/recall:
+    post:
+      summary: Thu hồi (người gửi, ≤24h)
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: "FORBIDDEN (gộp: không phải bạn, bị chặn, sai mật khẩu xác nhận)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: OTP_INVALID / RECALL_WINDOW_EXPIRED / GROUP_NOT_SUPPORTED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/messages/{messageId}/hide:
+    post:
+      summary: Xóa phía tôi
+      security:
+        - bearer: []
+      x-auth: token
+      x-idempotency: natural
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/changes:
+    get:
+      summary: Change log sau afterSeq; 410 nếu quá cũ
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: afterSeq
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/Seq"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 100
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangePage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "410":
+          description: SYNC_CURSOR_EXPIRED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/conversations/{conversationId}/receipts:
+    put:
+      summary: Cập nhật deliveredSeq/readSeq (chỉ tăng)
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 120/phút
+      x-idempotency: natural
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReceiptUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Receipt"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/sync:
+    get:
+      summary: Delta user_changes; không cursor = lần đầu
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 512
+            pattern: ^[A-Za-z0-9_-]+$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 100
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncPage"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "410":
+          description: SYNC_CURSOR_EXPIRED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/reports:
+    post:
+      summary: ⚖ Báo cáo người/tin; lưu bản chụp
+      security:
+        - bearer: []
+      x-auth: token
+      x-rate-limit: user 20/ngày
+      x-idempotency: Idempotency-Key
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCreate"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportAccepted"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: RATE_LIMITED (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/health/live:
+    get:
+      summary: Tiến trình sống
+      security: []
+      x-auth: public
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+  /v1/health/ready:
+    get:
+      summary: DB kết nối được + migration đúng phiên bản
+      security: []
+      x-auth: public
+      parameters: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ok"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Seq:
+      type: string
+      pattern: ^(0|[1-9][0-9]{0,18})$
+    Username:
+      type: string
+      minLength: 3
+      maxLength: 30
+      pattern: ^[a-z0-9_][a-z0-9_.]{1,28}[a-z0-9_]$
+    Password:
+      type: string
+      minLength: 8
+      maxLength: 128
+    ErrorCode:
+      type: string
+      enum:
+        - VALIDATION_FAILED
+        - UNAUTHENTICATED
+        - TOKEN_EXPIRED
+        - TOKEN_REUSED
+        - INVALID_CREDENTIALS
+        - OTP_REQUIRED
+        - OTP_INVALID
+        - FORBIDDEN
+        - NOT_FOUND
+        - USERNAME_TAKEN
+        - IDEMPOTENCY_CONFLICT
+        - VERSION_CONFLICT
+        - RECALL_WINDOW_EXPIRED
+        - GROUP_NOT_SUPPORTED
+        - DEVICE_LIMIT_REACHED
+        - SYNC_CURSOR_EXPIRED
+        - RATE_LIMITED
+        - SERVER_BUSY
+        - INTERNAL
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              $ref: "#/components/schemas/ErrorCode"
+            message:
+              type: string
+            requestId:
+              type: string
+            details:
+              type: object
+              additionalProperties: {}
+          required:
+            - code
+            - message
+            - requestId
+          additionalProperties: false
+      required:
+        - error
+      additionalProperties: false
+    Accepted:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - accepted
+      required:
+        - status
+      additionalProperties: false
+    Ok:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - true
+      required:
+        - ok
+      additionalProperties: false
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          $ref: "#/components/schemas/Username"
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        password:
+          $ref: "#/components/schemas/Password"
+        deviceName:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+        - username
+        - email
+        - password
+        - deviceName
+      additionalProperties: false
+    RegisterResponse:
+      type: object
+      properties:
+        registrationId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+      required:
+        - registrationId
+      additionalProperties: false
+    VerifyEmailRequest:
+      type: object
+      properties:
+        registrationId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+      required:
+        - registrationId
+        - code
+      additionalProperties: false
+    ResendOtpRequest:
+      oneOf:
+        - type: object
+          properties:
+            purpose:
+              type: string
+              enum:
+                - register
+            registrationId:
+              type: string
+              format: uuid
+              pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+          required:
+            - purpose
+            - registrationId
+          additionalProperties: false
+        - type: object
+          properties:
+            purpose:
+              type: string
+              enum:
+                - device
+            challengeId:
+              type: string
+              format: uuid
+              pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+          required:
+            - purpose
+            - challengeId
+          additionalProperties: false
+    LoginRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          minLength: 3
+          maxLength: 320
+        password:
+          $ref: "#/components/schemas/Password"
+        deviceName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        deviceToken:
+          type: string
+          minLength: 32
+          maxLength: 512
+      required:
+        - identifier
+        - password
+        - deviceName
+      additionalProperties: false
+    TokenPair:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+            - full
+            - restore
+        accessToken:
+          type: string
+        accessExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        refreshToken:
+          type: string
+          minLength: 32
+          maxLength: 512
+        refreshExpiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        deviceId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        deviceToken:
+          type: string
+          minLength: 32
+          maxLength: 512
+      required:
+        - scope
+        - accessToken
+        - accessExpiresAt
+        - refreshToken
+        - refreshExpiresAt
+        - deviceId
+      additionalProperties: false
+    OtpChallenge:
+      type: object
+      properties:
+        challenge:
+          type: string
+          enum:
+            - device_otp
+        challengeId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - challenge
+        - challengeId
+        - expiresAt
+      additionalProperties: false
+    LoginResponse:
+      anyOf:
+        - $ref: "#/components/schemas/TokenPair"
+        - $ref: "#/components/schemas/OtpChallenge"
+    VerifyDeviceRequest:
+      type: object
+      properties:
+        challengeId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+      required:
+        - challengeId
+        - code
+      additionalProperties: false
+    RefreshRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          minLength: 32
+          maxLength: 512
+      required:
+        - refreshToken
+      additionalProperties: false
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+      required:
+        - email
+      additionalProperties: false
+    ResetPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+        newPassword:
+          $ref: "#/components/schemas/Password"
+      required:
+        - email
+        - code
+        - newPassword
+      additionalProperties: false
+    RecoverRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          minLength: 3
+          maxLength: 320
+        recoveryCode:
+          type: string
+          minLength: 8
+          maxLength: 64
+        newPassword:
+          $ref: "#/components/schemas/Password"
+      required:
+        - identifier
+        - recoveryCode
+        - newPassword
+      additionalProperties: false
+    Privacy:
+      type: object
+      properties:
+        discoverable:
+          type: string
+          enum:
+            - everyone
+            - nobody
+        readReceipts:
+          type: boolean
+        hideOnline:
+          type: boolean
+      required:
+        - discoverable
+        - readReceipts
+        - hideOnline
+      additionalProperties: false
+    Settings:
+      type: object
+      properties:
+        newDeviceOtp:
+          type: boolean
+        locale:
+          type: string
+          enum:
+            - vi
+            - en
+        notificationsEnabled:
+          type: boolean
+        privacy:
+          $ref: "#/components/schemas/Privacy"
+        version:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 9007199254740991
+      required:
+        - newDeviceOtp
+        - locale
+        - notificationsEnabled
+        - privacy
+        - version
+      additionalProperties: false
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        username:
+          $ref: "#/components/schemas/Username"
+        displayName:
+          nullable: true
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        status:
+          type: string
+          enum:
+            - active
+            - deleting
+        deletionDueAt:
+          nullable: true
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        profileVersion:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 9007199254740991
+        settings:
+          $ref: "#/components/schemas/Settings"
+      required:
+        - id
+        - username
+        - displayName
+        - email
+        - status
+        - deletionDueAt
+        - profileVersion
+        - settings
+      additionalProperties: false
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayName:
+          nullable: true
+          type: string
+          minLength: 1
+          maxLength: 80
+        expectedVersion:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 9007199254740991
+      required:
+        - displayName
+        - expectedVersion
+      additionalProperties: false
+    UpdateSettingsRequest:
+      type: object
+      properties:
+        newDeviceOtp:
+          type: boolean
+        locale:
+          type: string
+          enum:
+            - vi
+            - en
+        notificationsEnabled:
+          type: boolean
+        privacy:
+          type: object
+          properties:
+            discoverable:
+              type: string
+              enum:
+                - everyone
+                - nobody
+            readReceipts:
+              type: boolean
+            hideOnline:
+              type: boolean
+          additionalProperties: false
+        expectedVersion:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 9007199254740991
+        currentPassword:
+          allOf:
+            - $ref: "#/components/schemas/Password"
+      required:
+        - expectedVersion
+      additionalProperties: false
+    ChangeEmailRequest:
+      type: object
+      properties:
+        newEmail:
+          type: string
+          maxLength: 320
+          format: email
+          pattern: ^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$
+        password:
+          $ref: "#/components/schemas/Password"
+      required:
+        - newEmail
+        - password
+      additionalProperties: false
+    ConfirmEmailRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+      required:
+        - code
+      additionalProperties: false
+    ChangePasswordRequest:
+      type: object
+      properties:
+        currentPassword:
+          $ref: "#/components/schemas/Password"
+        newPassword:
+          $ref: "#/components/schemas/Password"
+      required:
+        - currentPassword
+        - newPassword
+      additionalProperties: false
+    PasswordConfirm:
+      type: object
+      properties:
+        password:
+          $ref: "#/components/schemas/Password"
+      required:
+        - password
+      additionalProperties: false
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        name:
+          type: string
+        current:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - id
+        - name
+        - current
+        - lastSeenAt
+        - createdAt
+      additionalProperties: false
+    JobAccepted:
+      type: object
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - done
+            - failed
+      required:
+        - jobId
+        - status
+      additionalProperties: false
+    RecoveryCodes:
+      type: object
+      properties:
+        codes:
+          minItems: 10
+          maxItems: 10
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - codes
+        - createdAt
+      additionalProperties: false
+    PublicUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        username:
+          $ref: "#/components/schemas/Username"
+        displayName:
+          nullable: true
+          type: string
+          minLength: 1
+          maxLength: 80
+      required:
+        - id
+        - username
+        - displayName
+      additionalProperties: false
+    UserLookup:
+      nullable: true
+      allOf:
+        - $ref: "#/components/schemas/PublicUser"
+    FriendRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        sender:
+          $ref: "#/components/schemas/PublicUser"
+        recipient:
+          $ref: "#/components/schemas/PublicUser"
+        status:
+          type: string
+          enum:
+            - pending
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        expiresAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - id
+        - sender
+        - recipient
+        - status
+        - createdAt
+        - expiresAt
+      additionalProperties: false
+    Friend:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/PublicUser"
+        since:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - user
+        - since
+      additionalProperties: false
+    Block:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/PublicUser"
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - user
+        - createdAt
+      additionalProperties: false
+    FriendRequestCreate:
+      type: object
+      properties:
+        username:
+          $ref: "#/components/schemas/Username"
+      required:
+        - username
+      additionalProperties: false
+    BlockCreate:
+      type: object
+      properties:
+        username:
+          $ref: "#/components/schemas/Username"
+      required:
+        - username
+      additionalProperties: false
+    ReplyPreview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        senderId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        available:
+          type: boolean
+        body:
+          nullable: true
+          type: string
+          maxLength: 200
+      required:
+        - id
+        - senderId
+        - available
+        - body
+      additionalProperties: false
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        conversationId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        senderId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        clientMsgId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        createdSeq:
+          $ref: "#/components/schemas/Seq"
+        latestSeq:
+          $ref: "#/components/schemas/Seq"
+        body:
+          nullable: true
+          type: string
+        deleted:
+          type: boolean
+        replyTo:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ReplyPreview"
+        attachments:
+          maxItems: 0
+          type: array
+          items:
+            not: {}
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - id
+        - conversationId
+        - senderId
+        - clientMsgId
+        - createdSeq
+        - latestSeq
+        - body
+        - deleted
+        - replyTo
+        - attachments
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+    SendMessageRequest:
+      type: object
+      properties:
+        clientMsgId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        body:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        replyToId:
+          default: null
+          nullable: true
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        attachments:
+          default: []
+          maxItems: 0
+          type: array
+          items:
+            not: {}
+      required:
+        - clientMsgId
+        - body
+        - replyToId
+        - attachments
+      additionalProperties: false
+    SendMessageResponse:
+      type: object
+      properties:
+        message:
+          $ref: "#/components/schemas/Message"
+        duplicate:
+          type: boolean
+      required:
+        - message
+        - duplicate
+      additionalProperties: false
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        type:
+          type: string
+          enum:
+            - direct
+        peer:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PublicUser"
+        peerDeleted:
+          type: boolean
+        lastSeq:
+          $ref: "#/components/schemas/Seq"
+        lastDeliveredSeq:
+          $ref: "#/components/schemas/Seq"
+        lastReadSeq:
+          $ref: "#/components/schemas/Seq"
+        peerDeliveredSeq:
+          $ref: "#/components/schemas/Seq"
+        peerReadSeq:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Seq"
+        unreadCount:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        lastMessage:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Message"
+        pinned:
+          type: boolean
+        muted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - id
+        - type
+        - peer
+        - peerDeleted
+        - lastSeq
+        - lastDeliveredSeq
+        - lastReadSeq
+        - peerDeliveredSeq
+        - peerReadSeq
+        - unreadCount
+        - lastMessage
+        - pinned
+        - muted
+        - createdAt
+      additionalProperties: false
+    ConversationPatch:
+      type: object
+      properties:
+        pinned:
+          type: boolean
+        muted:
+          type: boolean
+      additionalProperties: false
+    GroupCreate:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - group
+      required:
+        - type
+      additionalProperties: false
+    DirectCreate:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - direct
+        peerId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+      required:
+        - type
+        - peerId
+      additionalProperties: false
+    ConversationCreate:
+      anyOf:
+        - $ref: "#/components/schemas/DirectCreate"
+        - $ref: "#/components/schemas/GroupCreate"
+    ReceiptUpdate:
+      type: object
+      properties:
+        deliveredSeq:
+          allOf:
+            - $ref: "#/components/schemas/Seq"
+        readSeq:
+          allOf:
+            - $ref: "#/components/schemas/Seq"
+      additionalProperties: false
+    Receipt:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        userId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        deliveredSeq:
+          $ref: "#/components/schemas/Seq"
+        readSeq:
+          $ref: "#/components/schemas/Seq"
+        updatedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+      required:
+        - conversationId
+        - userId
+        - deliveredSeq
+        - readSeq
+        - updatedAt
+      additionalProperties: false
+    ReportCreate:
+      type: object
+      properties:
+        targetUserId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        messageId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        reason:
+          type: string
+          enum:
+            - spam
+            - harassment
+            - other
+        note:
+          type: string
+          maxLength: 1000
+      required:
+        - reason
+      additionalProperties: false
+    ReportAccepted:
+      type: object
+      properties:
+        reportId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        status:
+          type: string
+          enum:
+            - received
+      required:
+        - reportId
+        - status
+      additionalProperties: false
+    Change:
+      type: object
+      properties:
+        seq:
+          $ref: "#/components/schemas/Seq"
+        messageId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        kind:
+          type: string
+          enum:
+            - created
+            - recalled
+            - purged
+            - redacted
+        message:
+          $ref: "#/components/schemas/Message"
+      required:
+        - seq
+        - messageId
+        - kind
+        - message
+      additionalProperties: false
+    EntityChange:
+      type: object
+      properties:
+        seq:
+          $ref: "#/components/schemas/Seq"
+        entityType:
+          type: string
+          enum:
+            - profile
+            - settings
+            - device
+            - friend_request
+            - friendship
+            - block
+            - conversation
+            - message_visibility
+        entityId:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        kind:
+          type: string
+          enum:
+            - upsert
+            - delete
+      required:
+        - seq
+        - entityType
+        - entityId
+        - kind
+      additionalProperties: false
+    SyncPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityChange"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+        conversations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+              lastSeq:
+                $ref: "#/components/schemas/Seq"
+            required:
+              - id
+              - lastSeq
+            additionalProperties: false
+        initial:
+          type: boolean
+        recentMessages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+      required:
+        - items
+        - nextCursor
+        - conversations
+        - initial
+      additionalProperties: false
+    FriendRequestPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FriendRequest"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    FriendPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Friend"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    BlockPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Block"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    ConversationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Conversation"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    MessagePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    ChangePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Change"
+        nextCursor:
+          nullable: true
+          type: string
+          maxLength: 512
+          pattern: ^[A-Za-z0-9_-]+$
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    DeviceList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Device"
+      required:
+        - items
+      additionalProperties: false

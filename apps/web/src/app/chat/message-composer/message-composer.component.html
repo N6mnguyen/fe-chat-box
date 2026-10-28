@@ -1,0 +1,84 @@
+<form class="composer" [formGroup]="form" (submit)="$event.preventDefault(); submit()" [attr.aria-label]="'composer.label' | transloco">
+  @if (replyMessage; as reply) {
+    <div class="composer__reply" role="status">
+      <span><strong>{{ 'messages.reply' | transloco }} · {{ reply.senderName }}</strong><br />{{ reply.content || reply.attachment?.name }}</span>
+      <button type="button" [attr.aria-label]="'messages.cancelReply' | transloco" (click)="replyCancelled.emit()">
+        <app-icon name="close" />
+      </button>
+    </div>
+  }
+  @if (fileError()) {
+    <p class="composer__error" role="alert">{{ 'composer.fileTooLarge' | transloco }}</p>
+  }
+  @if (errorKey) {
+    <p class="composer__error" role="alert">{{ errorKey | transloco }}</p>
+  }
+
+  @if (files().length > 0) {
+    <ul class="chips">
+      @for (file of files(); track $index) {
+        <li class="chip">
+          <app-icon name="file" />
+          <span class="chip__name" [title]="file.name">{{ file.name }}</span>
+          <span class="chip__size">{{ sizeLabel(file.size) }}</span>
+          <button type="button" class="chip__remove" [attr.aria-label]="'composer.removeFile' | transloco: { name: file.name }" (click)="removeFile($index)">
+            <app-icon name="close" />
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (emojiOpen()) {
+    <div class="emoji" role="group" [attr.aria-label]="'composer.emojiList' | transloco">
+      @for (emoji of emojis; track emoji) {
+        <button type="button" class="emoji__btn" (click)="addEmoji(emoji)">{{ emoji }}</button>
+      }
+    </div>
+  }
+
+  <div class="composer__bar">
+    <button
+      type="button"
+      class="icon-btn"
+      [class.icon-btn--on]="emojiOpen()"
+      [attr.aria-expanded]="emojiOpen()"
+      [attr.aria-label]="'composer.emoji' | transloco"
+      [title]="'composer.emoji' | transloco"
+      (click)="toggleEmoji()"
+    >
+      <app-icon name="emoji" />
+    </button>
+
+    <label class="icon-btn" [title]="'composer.image' | transloco">
+      <app-icon name="image" />
+      <span class="visually-hidden">{{ 'composer.image' | transloco }}</span>
+      <input class="visually-hidden" type="file" accept="image/*" multiple (change)="onFilesPicked($event)" />
+    </label>
+
+    <label class="icon-btn" [title]="'composer.file' | transloco">
+      <app-icon name="attach" />
+      <span class="visually-hidden">{{ 'composer.file' | transloco }}</span>
+      <input class="visually-hidden" type="file" multiple (change)="onFilesPicked($event)" />
+    </label>
+
+    <textarea
+      class="composer__input"
+      rows="1"
+      formControlName="content"
+      [placeholder]="'composer.placeholder' | transloco"
+      [attr.aria-label]="'composer.placeholder' | transloco"
+      (keydown)="onKeydown($event)"
+    ></textarea>
+
+    <button
+      type="submit"
+      class="send"
+      [disabled]="!canSend"
+      [attr.aria-label]="(sending ? 'composer.sending' : 'composer.send') | transloco"
+      [title]="'composer.send' | transloco"
+    >
+      <app-icon name="send" />
+    </button>
+  </div>
+</form>

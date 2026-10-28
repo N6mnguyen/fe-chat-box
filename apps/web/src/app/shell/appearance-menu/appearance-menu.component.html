@@ -1,0 +1,36 @@
+<div class="menu">
+  <h2 class="menu__title">{{ 'appearance.title' | transloco }}</h2>
+
+  <p class="menu__label" id="theme-label">{{ 'appearance.theme' | transloco }}</p>
+  <div class="options" role="radiogroup" aria-labelledby="theme-label">
+    @for (mode of modes; track mode) {
+      <button
+        type="button"
+        role="radio"
+        class="option"
+        [class.option--on]="theme() === mode"
+        [attr.aria-checked]="theme() === mode"
+        (click)="setTheme(mode)"
+      >
+        {{ 'appearance.' + mode | transloco }}
+      </button>
+    }
+  </div>
+
+  <p class="menu__label" id="wallpaper-label">{{ 'appearance.wallpaper' | transloco }}</p>
+  <div class="options" role="radiogroup" aria-labelledby="wallpaper-label">
+    @for (wp of wallpapers; track wp) {
+      <button
+        type="button"
+        role="radio"
+        class="option"
+        [class.option--on]="wallpaper() === wp"
+        [attr.aria-checked]="wallpaper() === wp"
+        (click)="setWallpaper(wp)"
+      >
+        <span class="swatch swatch--{{ wp }}" aria-hidden="true"></span>
+        {{ 'appearance.' + wp | transloco }}
+      </button>
+    }
+  </div>
+</div>

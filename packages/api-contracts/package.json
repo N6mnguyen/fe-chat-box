@@ -1,0 +1,19 @@
+{
+  "name": "@vchat/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "openapi": "node --experimental-strip-types scripts/gen-openapi.ts",
+    "test": "node --experimental-strip-types --test \"test/*.test.ts\""
+  },
+  "dependencies": {
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
+  }
+}

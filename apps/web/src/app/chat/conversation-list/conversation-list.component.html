@@ -1,0 +1,125 @@
+<section class="list" [attr.aria-label]="'list.label' | transloco">
+  <header class="list__head">
+    <div class="list__titlebar">
+      <h1 class="list__title">{{ 'list.title' | transloco }}</h1>
+      @if (state() === 'ready') {
+        <span class="list__count">{{ 'list.count' | transloco: { n: total() } }}</span>
+      }
+    </div>
+    <form class="search" [formGroup]="searchForm" role="search" (submit)="$event.preventDefault()">
+      <app-icon name="search" class="search__icon" />
+      <input
+        class="search__input"
+        type="search"
+        formControlName="query"
+        autocomplete="off"
+        [placeholder]="'list.search' | transloco"
+        [attr.aria-label]="'list.searchLabel' | transloco"
+      />
+    </form>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <ul class="skeletons" role="status" [attr.aria-label]="'list.loading' | transloco">
+        @for (n of skeletons; track n) {
+          <li class="skeleton">
+            <span class="skeleton__avatar"></span>
+            <span class="skeleton__lines"><span></span><span></span></span>
+          </li>
+        }
+      </ul>
+    }
+    @case ('error') {
+      <div class="list__state" role="alert">
+        <p>{{ 'list.error' | transloco }}</p>
+        <button type="button" class="btn" (click)="reload()">{{ 'list.retry' | transloco }}</button>
+      </div>
+    }
+    @default {
+      @if (rows().length === 0) {
+        <p class="list__state" role="status">
+          {{ (hasQuery() ? 'list.noResult' : 'list.empty') | transloco }}
+        </p>
+      } @else {
+        <cdk-virtual-scroll-viewport class="list__viewport" [itemSize]="itemHeight" (keydown)="onKeydown($event)">
+          <ul class="items" role="list">
+            <li *cdkVirtualFor="let row of rows(); trackBy: trackById" class="items__row">
+              <button
+                #itemButton
+                type="button"
+                class="item"
+                [class.item--active]="row.conversation.id === selectedId()"
+                [attr.data-id]="row.conversation.id"
+                [attr.aria-current]="row.conversation.id === selectedId() ? 'true' : null"
+                [cdkContextMenuTriggerFor]="conversationMenu"
+                [cdkContextMenuTriggerData]="{ $implicit: row }"
+                (focus)="onFocus(row.conversation.id)"
+                (click)="open(row)"
+              >
+                <app-avatar
+                  [name]="row.conversation.name"
+                  [seed]="row.conversation.id"
+                  [online]="row.conversation.online"
+                  [showPresence]="true"
+                />
+                <span class="item__body">
+                  <span class="item__line">
+                    <span class="item__name" [class.item__name--bold]="row.conversation.unread > 0" [title]="row.title">{{ row.conversation.name }}</span>
+                    @let time = row.conversation.lastAt | relativeTime;
+                    <time class="item__time">{{ time.key ? (time.key | transloco: time.params) : time.text }}</time>
+                  </span>
+                  <span class="item__line">
+                    <span
+                      class="item__last"
+                      [class.item__last--bold]="row.conversation.unread > 0"
+                      [title]="(row.senderPrefix ? (row.senderPrefix.startsWith('list.') ? (row.senderPrefix | transloco) : row.senderPrefix) + ': ' : '') + row.conversation.lastText"
+                    >
+                      @if (row.senderPrefix) {
+                        <span class="item__sender">{{ row.senderPrefix.startsWith('list.') ? (row.senderPrefix | transloco) : row.senderPrefix }}: </span>
+                      }
+                      @switch (row.conversation.lastKind) {
+                        @case ('image') {
+                          {{ 'list.image' | transloco }}
+                        }
+                        @case ('file') {
+                          {{ 'list.file' | transloco: { name: row.conversation.lastText } }}
+                        }
+                        @default {
+                          {{ row.conversation.lastText || ('list.noMessage' | transloco) }}
+                        }
+                      }
+                    </span>
+                    <span class="item__meta">
+                      @if (row.conversation.pinned) {
+                        <app-icon name="pin" class="item__icon" [attr.title]="'list.pinned' | transloco" />
+                      }
+                      @if (row.conversation.muted) {
+                        <app-icon name="bell-off" class="item__icon" [attr.title]="'list.muted' | transloco" />
+                      }
+                      @if (row.conversation.unread > 0) {
+                        <span class="badge" [attr.aria-label]="'list.unread' | transloco: { n: row.conversation.unread }">{{ row.unreadLabel }}</span>
+                      }
+                    </span>
+                  </span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </cdk-virtual-scroll-viewport>
+      }
+    }
+  }
+  <ng-template #conversationMenu let-row>
+    <div class="conversation-menu" cdkMenu [attr.aria-label]="'list.conversationActions' | transloco">
+      <button type="button" class="conversation-menu__item" cdkMenuItem (cdkMenuItemTriggered)="togglePinned(row.conversation.id)">
+        <app-icon name="pin" />
+        {{ (row.conversation.pinned ? 'list.unpinConversation' : 'list.pinConversation') | transloco }}
+      </button>
+      <button type="button" class="conversation-menu__item" cdkMenuItem (cdkMenuItemTriggered)="toggleMuted(row.conversation.id)">
+        <app-icon [name]="row.conversation.muted ? 'bell' : 'bell-off'" />
+        {{ (row.conversation.muted ? 'list.unmuteNotifications' : 'list.muteNotifications') | transloco }}
+      </button>
+    </div>
+  </ng-template>
+</section>

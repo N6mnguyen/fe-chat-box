@@ -1,0 +1,94 @@
+<div class="auth-form">
+  <span class="auth-form__eyebrow">{{ 'auth.registerEyebrow' | transloco }}</span>
+  <h2 class="auth-form__title">{{ 'auth.registerTitle' | transloco }}</h2>
+  <p class="auth-form__description">{{ 'auth.registerDescription' | transloco }}</p>
+
+  @if (serverError()) {
+    <div class="auth-form__alert" role="alert" aria-live="assertive">{{ serverError() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="auth-field">
+      <label for="register-username">{{ 'auth.usernameLabel' | transloco }}</label>
+      <input
+        #usernameInput
+        id="register-username"
+        type="text"
+        formControlName="username"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+        [placeholder]="'auth.usernamePlaceholder' | transloco"
+        [attr.aria-invalid]="!!errorFor('username')"
+        [attr.aria-describedby]="errorFor('username') ? 'register-username-help register-username-error' : 'register-username-help'"
+        (blur)="checkUsername()"
+      />
+      <span id="register-username-help" class="auth-field__hint">{{ 'auth.usernameHint' | transloco }}</span>
+      @if (checkingUsername()) {
+        <span class="auth-field__hint" aria-live="polite">{{ 'auth.checkingUsername' | transloco }}</span>
+      }
+      @if (errorFor('username'); as error) {
+        <span id="register-username-error" class="auth-field__error" aria-live="polite">{{ error }}</span>
+      }
+    </div>
+
+    <div class="auth-field">
+      <label for="register-email">{{ 'auth.emailLabel' | transloco }}</label>
+      <input
+        id="register-email"
+        type="email"
+        formControlName="email"
+        autocomplete="email"
+        autocapitalize="none"
+        [placeholder]="'auth.emailPlaceholder' | transloco"
+        [attr.aria-invalid]="!!errorFor('email')"
+        [attr.aria-describedby]="errorFor('email') ? 'register-email-error' : null"
+      />
+      @if (errorFor('email'); as error) {
+        <span id="register-email-error" class="auth-field__error" aria-live="polite">{{ error }}</span>
+      }
+    </div>
+
+    <div class="auth-field">
+      <label for="register-password">{{ 'auth.passwordLabel' | transloco }}</label>
+      <div class="auth-field__password">
+        <input
+          id="register-password"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="new-password"
+          [placeholder]="'auth.passwordPlaceholder' | transloco"
+          [attr.aria-invalid]="!!errorFor('password')"
+          [attr.aria-describedby]="errorFor('password') ? 'register-password-hint register-password-error' : 'register-password-hint'"
+        />
+        <button
+          type="button"
+          class="auth-field__toggle"
+          [attr.aria-pressed]="showPassword()"
+          [attr.aria-label]="(showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | transloco"
+          (click)="togglePassword()"
+        >
+          {{ (showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | transloco }}
+        </button>
+      </div>
+      <span id="register-password-hint" class="auth-field__hint">{{ 'auth.passwordHint' | transloco }}</span>
+      @if (errorFor('password'); as error) {
+        <span id="register-password-error" class="auth-field__error" aria-live="polite">{{ error }}</span>
+      }
+    </div>
+
+    <button class="auth-submit" type="submit" [disabled]="pending() || checkingUsername()">
+      @if (pending()) {
+        <span class="auth-submit__spinner" aria-hidden="true"></span>
+        {{ 'auth.creatingAccount' | transloco }}
+      } @else {
+        {{ 'auth.registerAction' | transloco }}
+      }
+    </button>
+  </form>
+
+  <p class="auth-form__switch">
+    {{ 'auth.hasAccount' | transloco }}
+    <a routerLink="/auth/login">{{ 'auth.loginAction' | transloco }}</a>
+  </p>
+</div>

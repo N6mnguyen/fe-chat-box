@@ -1,0 +1,547 @@
+:host {
+  display: block;
+  flex: 1;
+  min-height: 0;
+}
+
+.wrap {
+  position: relative;
+  height: 100%;
+}
+
+// Chỉ vùng này cuộn (dọc); không bao giờ cuộn ngang.
+.scroller {
+  height: 100%;
+  padding: var(--space-4);
+  overflow: hidden auto;
+  background: var(--wallpaper), var(--color-chat-bg);
+  overscroll-behavior: contain;
+}
+
+.jump {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-raised);
+  box-shadow: var(--shadow-pop);
+  color: var(--color-text);
+  cursor: pointer;
+
+  &__count {
+    color: var(--color-link);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+
+  &__img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+  }
+
+  &__close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    display: inline-flex;
+    padding: var(--space-2);
+    border: 0;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 16%);
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+  }
+}
+
+.quote {
+  display: flex;
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  flex-direction: column;
+  max-width: 100%;
+  margin-bottom: 2px;
+  padding: var(--space-1) var(--space-3);
+  border-left: 3px solid var(--color-link);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-subtle);
+  font-size: 12px;
+
+  &__name {
+    color: var(--color-link);
+    font-weight: 600;
+  }
+
+  &__text {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.reactions {
+  display: flex;
+  gap: var(--space-1);
+  margin: -6px 0 0;
+  padding: 0 var(--space-2);
+  list-style: none;
+
+  &__chip {
+    padding: 0 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-raised);
+    color: var(--color-text);
+    font-size: 12px;
+    cursor: pointer;
+
+    &--mine {
+      border-color: var(--color-link);
+      background: var(--color-primary-soft);
+    }
+  }
+}
+
+// Nút thả reaction: nằm cạnh bong bóng, hiện khi rê chuột / focus (luôn hiện trên thiết bị cảm ứng).
+.row__content {
+  position: relative;
+}
+
+.react-pop {
+  position: absolute;
+  top: 0;
+  right: -68px;
+  display: flex;
+  gap: 2px;
+  z-index: 2;
+
+  &__btn {
+    display: inline-flex;
+    padding: 6px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-raised);
+    box-shadow: var(--shadow-pop);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  &__list {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    display: flex;
+    gap: 2px;
+    margin: var(--space-1) 0 0;
+    padding: var(--space-1);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-raised);
+    box-shadow: var(--shadow-pop);
+    list-style: none;
+  }
+
+  &__emoji {
+    padding: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-hover);
+    }
+  }
+}
+
+.row--mine .react-pop {
+  right: auto;
+  left: -68px;
+
+  &__list {
+    right: auto;
+    left: 0;
+  }
+}
+
+@media (hover: hover) {
+  .react-pop__btn {
+    opacity: 0;
+  }
+
+  .row__content:hover .react-pop__btn,
+  .react-pop__btn[aria-haspopup].cdk-menu-trigger-open,
+  .react-pop__btn:focus-visible,
+  .react-pop__btn[aria-expanded='true'] {
+    opacity: 1;
+  }
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  text-align: center;
+
+  &__title {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  &__hint {
+    margin: var(--space-1) 0 0;
+  }
+}
+
+.day {
+  margin: var(--space-3) 0;
+  text-align: center;
+
+  &__label {
+    padding: 2px var(--space-3);
+    border-radius: 10px;
+    background: var(--color-hover);
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+}
+
+.row__forwarded {
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-top: 2px;
+  --avatar-size: 32px;
+
+  &--mine {
+    flex-direction: row-reverse;
+  }
+
+  // Hết một cụm tin: chừa khoảng trống trước cụm sau.
+  &--end {
+    margin-bottom: var(--space-3);
+  }
+
+  &__sender {
+    margin: 0 0 2px var(--space-3);
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &__avatar {
+    flex: none;
+    width: 32px;
+    height: 32px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 70%;
+    min-width: 0;
+  }
+
+  &--mine &__content {
+    align-items: flex-end;
+  }
+}
+
+.bubble {
+  max-width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bubble-other);
+  overflow-wrap: anywhere;
+
+  &--mine {
+    border-color: transparent;
+    background: var(--color-bubble-mine);
+  }
+
+  &--media {
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+  }
+
+  // Bo góc theo vị trí trong cụm: phía dính avatar/đuôi bo nhỏ.
+  &[data-pos='first'] {
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &[data-pos='middle'],
+  &[data-pos='last'] {
+    border-top-left-radius: var(--radius-sm);
+  }
+
+  &[data-pos='middle'] {
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &--mine[data-pos='first'] {
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  &--mine[data-pos='middle'],
+  &--mine[data-pos='last'] {
+    border-top-left-radius: var(--radius-md);
+    border-top-right-radius: var(--radius-sm);
+  }
+
+  &--mine[data-pos='middle'] {
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+
+  a {
+    color: var(--color-primary);
+  }
+}
+
+.image-btn {
+  display: block;
+  width: 260px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--color-bg-subtle);
+  cursor: zoom-in;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 200px;
+
+  &__icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    color: var(--color-primary);
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__name {
+    overflow: hidden;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__size {
+    color: var(--color-text-muted);
+    font-size: 12px;
+  }
+
+  &__download {
+    display: inline-flex;
+    flex: none;
+    padding: var(--space-2);
+    border-radius: 50%;
+    color: var(--color-text);
+
+    &:hover {
+      background: var(--color-hover);
+    }
+  }
+}
+
+.meta {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 11px;
+
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+
+    &--error {
+      color: var(--color-danger);
+    }
+  }
+
+  &__retry {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-danger);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: var(--space-3);
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-text-muted);
+    animation: blink 1.2s infinite ease-in-out;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+  }
+
+  40% {
+    opacity: 1;
+  }
+}
+
+// Overlay CDK nằm ngoài vùng cuộn; token màu dùng chung cả hai chủ đề.
+.menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  box-shadow: var(--shadow-pop);
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover, &:focus-visible {
+      background: var(--color-hover);
+    }
+
+    &--danger {
+      color: var(--color-danger);
+    }
+  }
+}
+
+.edit {
+  min-width: min(320px, 70vw);
+
+  &__input {
+    width: 100%;
+    min-height: 64px;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    resize: vertical;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  &__btn {
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--color-hover);
+    cursor: pointer;
+
+    &--primary {
+      background: var(--color-primary);
+      color: #fff;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing span { animation: none; }
+}

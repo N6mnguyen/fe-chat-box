@@ -1,0 +1,62 @@
+@if (conversationSignal(); as conv) {
+  <aside
+    #panel
+    class="panel"
+    [attr.role]="drawer() ? 'dialog' : null"
+    [attr.aria-modal]="drawer() ? 'true' : null"
+    [attr.aria-label]="'info.title' | transloco"
+  >
+    <header class="panel__head">
+      <h2 class="panel__title">{{ 'info.title' | transloco }}</h2>
+      <button type="button" class="close" [attr.aria-label]="'common.close' | transloco" (click)="closed.emit()">
+        <app-icon name="close" />
+      </button>
+    </header>
+
+    <div class="panel__who">
+      <app-avatar [name]="conv.name" [seed]="conv.id" />
+      <p class="panel__name">{{ conv.name }}</p>
+    </div>
+
+    <section class="block">
+      <h3 class="block__title">{{ 'info.images' | transloco }}</h3>
+      @if (images().length === 0) {
+        <p class="block__none">{{ 'info.none' | transloco }}</p>
+      } @else {
+        <div class="grid">
+          @for (m of images(); track m.id) {
+            <img class="grid__img" [src]="m.attachment.url" [alt]="m.attachment.name" loading="lazy" />
+          }
+        </div>
+      }
+    </section>
+
+    <section class="block">
+      <h3 class="block__title">{{ 'info.files' | transloco }}</h3>
+      @if (files().length === 0) {
+        <p class="block__none">{{ 'info.none' | transloco }}</p>
+      } @else {
+        <ul class="files">
+          @for (m of files(); track m.id) {
+            <li class="files__item">
+              <app-icon name="file" />
+              <span class="files__text">
+                <span class="files__name" [title]="m.attachment.name">{{ m.attachment.name }}</span>
+                <span class="files__size">{{ m.sizeLabel }}</span>
+              </span>
+              <a
+                class="files__download"
+                [href]="m.attachment.url"
+                [download]="m.attachment.name"
+                [attr.aria-label]="'info.download' | transloco: { name: m.attachment.name }"
+                [title]="'info.download' | transloco: { name: m.attachment.name }"
+              >
+                <app-icon name="download" />
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </aside>
+}

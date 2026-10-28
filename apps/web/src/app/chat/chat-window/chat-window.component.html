@@ -1,0 +1,100 @@
+<div class="window">
+  <section class="window__main">
+    <app-chat-header
+      [conversation]="conversation"
+      [typing]="typing"
+      [infoOpen]="infoOpen()"
+      (backRequested)="backRequested.emit()"
+      (messageSearched)="query.set($event)"
+      (infoToggled)="toggleInfo()"
+    />
+    <app-message-list
+      [conversation]="conversation"
+      [messages]="messages"
+      [meId]="meId"
+      [typing]="typing"
+      [query]="query()"
+      (retryRequested)="onRetry($event)"
+      (reacted)="onReact($event)"
+      (editRequested)="onEdit($event)"
+      (deleteRequested)="onDelete($event)"
+      (deleteForAllRequested)="onDeleteForAll($event)"
+      (replyRequested)="onReply($event)"
+      (forwardRequested)="onForward($event)"
+    />
+    <app-message-composer
+      [sending]="sending()"
+      [errorKey]="errorKey()"
+      [replyMessage]="replyMessage()"
+      (replyCancelled)="replyMessage.set(null)"
+      (messageSent)="onSend($event)"
+    />
+  </section>
+
+  <nz-modal
+    [nzVisible]="!!forwardMessage()"
+    [nzTitle]="'messages.forward' | transloco"
+    [nzFooter]="forwardFooter"
+    [nzWidth]="520"
+    nzWrapClassName="forward-modal"
+    [nzCentered]="true"
+    [nzMaskClosable]="!forwarding()"
+    [nzClosable]="!forwarding()"
+    [nzKeyboard]="!forwarding()"
+    (nzOnCancel)="forwardMessage.set(null)"
+  >
+    <ng-container *nzModalContent>
+      @if (forwardMessage(); as message) {
+        <div class="forward">
+          <div class="forward__preview">
+            <span class="forward__preview-icon"><app-icon [name]="message.type === 'text' ? 'bubble' : message.type === 'image' ? 'image' : 'file'" /></span>
+            <span class="forward__preview-text">
+              <strong>{{ 'messages.forwardPreview' | transloco }}</strong>
+              <span>{{ message.content || message.attachment?.name }}</span>
+            </span>
+          </div>
+          <div class="forward__section-heading">
+            <label class="forward__search-label" for="forward-search">{{ 'messages.forwardTargets' | transloco }}</label>
+            <span class="forward__count" aria-live="polite">{{ 'messages.forwardSelected' | transloco: { n: forwardTargets().size } }}</span>
+          </div>
+          <div class="forward__search">
+            <app-icon name="search" aria-hidden="true" />
+            <input
+              id="forward-search"
+              nz-input
+              type="search"
+              [value]="forwardSearch()"
+              [placeholder]="'messages.forwardSearch' | transloco"
+              (input)="updateForwardSearch($event)"
+            />
+          </div>
+          <div class="forward__targets">
+            @for (target of filteredTargets(); track target.id) {
+              <label class="forward__target" [class.forward__target--selected]="forwardTargets().has(target.id)">
+                <input class="forward__checkbox" type="checkbox" [checked]="forwardTargets().has(target.id)" (change)="toggleForwardTarget(target.id)" />
+                <app-avatar [name]="target.name" [seed]="target.id" />
+                <span class="forward__target-name">{{ target.name }}</span>
+              </label>
+            } @empty {
+              <p class="forward__empty">{{ 'messages.forwardNoResults' | transloco }}</p>
+            }
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+  <ng-template #forwardFooter>
+    <button nz-button nzType="default" [disabled]="forwarding()" (click)="forwardMessage.set(null)">
+      {{ 'messages.cancel' | transloco }}
+    </button>
+    <button nz-button nzType="primary" [nzLoading]="forwarding()" [disabled]="!forwardTargets().size || forwarding()" (click)="submitForward()">
+      {{ 'messages.forward' | transloco }}
+    </button>
+  </ng-template>
+
+  @if (infoOpen()) {
+    <div class="window__info">
+      <app-info-panel [conversation]="conversation" [messages]="messages" (closed)="toggleInfo()" />
+    </div>
+  }
+</div>

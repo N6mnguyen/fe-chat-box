@@ -1,0 +1,79 @@
+<div class="auth-form">
+  <span class="auth-form__eyebrow">{{ 'auth.loginEyebrow' | transloco }}</span>
+  <h2 class="auth-form__title">{{ 'auth.loginTitle' | transloco }}</h2>
+  <p class="auth-form__description">{{ 'auth.loginDescription' | transloco }}</p>
+
+  @if (serverError()) {
+    <div class="auth-form__alert" role="alert" aria-live="assertive">{{ serverError() }}</div>
+  }
+  @if (retrySeconds() > 0) {
+    <p class="auth-form__retry" aria-live="polite">
+      {{ 'auth.retryAfter' | transloco: { seconds: retrySeconds() } }}
+    </p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="auth-field">
+      <label for="login-identifier">{{ 'auth.identifierLabel' | transloco }}</label>
+      <input
+        #identifierInput
+        id="login-identifier"
+        type="text"
+        formControlName="identifier"
+        autocomplete="username"
+        autocapitalize="none"
+        spellcheck="false"
+        [placeholder]="'auth.identifierPlaceholder' | transloco"
+        [attr.aria-invalid]="!!errorFor('identifier')"
+        [attr.aria-describedby]="errorFor('identifier') ? 'login-identifier-error' : null"
+      />
+      @if (errorFor('identifier'); as error) {
+        <span id="login-identifier-error" class="auth-field__error" aria-live="polite">{{ error }}</span>
+      }
+    </div>
+
+    <div class="auth-field">
+      <div class="auth-field__label-row">
+        <label for="login-password">{{ 'auth.passwordLabel' | transloco }}</label>
+        <a routerLink="/auth/forgot">{{ 'auth.forgotPassword' | transloco }}</a>
+      </div>
+      <div class="auth-field__password">
+        <input
+          id="login-password"
+          [type]="showPassword() ? 'text' : 'password'"
+          formControlName="password"
+          autocomplete="current-password"
+          [placeholder]="'auth.passwordPlaceholder' | transloco"
+          [attr.aria-invalid]="!!errorFor('password')"
+          [attr.aria-describedby]="errorFor('password') ? 'login-password-error' : null"
+        />
+        <button
+          type="button"
+          class="auth-field__toggle"
+          [attr.aria-pressed]="showPassword()"
+          [attr.aria-label]="(showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | transloco"
+          (click)="togglePassword()"
+        >
+          {{ (showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | transloco }}
+        </button>
+      </div>
+      @if (errorFor('password'); as error) {
+        <span id="login-password-error" class="auth-field__error" aria-live="polite">{{ error }}</span>
+      }
+    </div>
+
+    <button class="auth-submit" type="submit" [disabled]="pending() || retrySeconds() > 0">
+      @if (pending()) {
+        <span class="auth-submit__spinner" aria-hidden="true"></span>
+        {{ 'auth.signingIn' | transloco }}
+      } @else {
+        {{ 'auth.loginAction' | transloco }}
+      }
+    </button>
+  </form>
+
+  <p class="auth-form__switch">
+    {{ 'auth.noAccount' | transloco }}
+    <a routerLink="/auth/register">{{ 'auth.registerAction' | transloco }}</a>
+  </p>
+</div>

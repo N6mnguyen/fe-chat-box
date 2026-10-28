@@ -1,0 +1,361 @@
+@import '../../../node_modules/ng-zorro-antd/style/index.min.css';
+@import '../../../node_modules/ng-zorro-antd/message/style/index.min.css';
+@import '../../../node_modules/ng-zorro-antd/modal/style/index.min.css';
+@import '../../../node_modules/ng-zorro-antd/button/style/index.min.css';
+@import '../../../node_modules/ng-zorro-antd/checkbox/style/index.min.css';
+@import '../../../node_modules/ng-zorro-antd/input/style/index.min.css';
+
+// Design tokens. Mọi màu của component PHẢI lấy từ biến này, không hardcode.
+// Màu chữ được kiểm tra tương phản WCAG AA bằng src/app/shared/tokens.spec.ts, nên giá trị màu chữ/nền dùng hex.
+@mixin light-tokens {
+  color-scheme: light;
+  --color-bg: #fff;
+  --color-sidebar-bg: #f1f5fb;
+  --color-list-bg: #f8fafd;
+  --color-chat-bg: #eef3fa;
+  --color-raised: #fff;
+  --color-bg-subtle: #e9eef6;
+  --color-border: #d9e1ed;
+  --color-text: #141b2a;
+  --color-text-muted: #485468;
+  --color-primary: #2563eb;
+  --color-primary-contrast: #fff;
+  --color-link: #1d4ed8;
+  --color-primary-soft: #dfe9ff;
+  --color-bubble-mine: #2563eb;
+  --color-bubble-mine-text: #fff;
+  --color-bubble-other: #fff;
+  --color-danger: #b42318;
+  --color-danger-contrast: #fff;
+  --color-online: #16a34a;
+  --color-hover: rgb(20 27 42 / 7%);
+  --shadow-pop: 0 8px 24px rgb(20 27 42 / 18%);
+}
+
+@mixin dark-tokens {
+  color-scheme: dark;
+  --color-bg: #0b0e14;
+  --color-sidebar-bg: #090c11;
+  --color-list-bg: #0d1118;
+  --color-chat-bg: #0b0e14;
+  --color-raised: #151a24;
+  --color-bg-subtle: #1a2130;
+  --color-border: #1f2735;
+  --color-text: #e6ebf4;
+  --color-text-muted: #a3afc2;
+  --color-primary: #2563eb;
+  --color-primary-contrast: #fff;
+  --color-link: #8ab4ff;
+  --color-primary-soft: #15233f;
+  --color-bubble-mine: #2563eb;
+  --color-bubble-mine-text: #fff;
+  --color-bubble-other: #1a2130;
+  --color-danger: #ff8a80;
+  --color-danger-contrast: #0b0e14;
+  --color-online: #34d399;
+  --color-hover: rgb(255 255 255 / 8%);
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 55%);
+}
+
+:root {
+  @include light-tokens;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --wallpaper: none;
+}
+
+:root[data-theme='dark'] {
+  @include dark-tokens;
+}
+
+// Theo hệ thống: chỉ áp dụng khi người dùng không chọn sáng/tối rõ ràng.
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-theme='dark']) {
+    @include dark-tokens;
+  }
+}
+
+// Hình nền chat: trộn màu với nền hiện tại nên thích ứng cả sáng lẫn tối.
+:root[data-wallpaper='mist'] {
+  --wallpaper: linear-gradient(180deg, color-mix(in srgb, var(--color-chat-bg) 60%, #6bb6ff), var(--color-chat-bg));
+}
+
+:root[data-wallpaper='silk'] {
+  --wallpaper: linear-gradient(180deg, color-mix(in srgb, var(--color-chat-bg) 62%, #ffc78a), var(--color-chat-bg));
+}
+
+:root[data-wallpaper='lotus'] {
+  --wallpaper: linear-gradient(180deg, color-mix(in srgb, var(--color-chat-bg) 62%, #ff93bd), var(--color-chat-bg));
+}
+
+:root[data-wallpaper='night'] {
+  --wallpaper: linear-gradient(180deg, color-mix(in srgb, var(--color-chat-bg) 35%, #02040a), #02040a);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 14px/1.45 var(--font-family);
+}
+
+button,
+input,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+// Overlay gắn vào body: dùng token vì SCSS của component không bao phủ được.
+.forward-modal {
+  .ant-modal-content {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .ant-modal-header {
+    padding: var(--space-4) var(--space-5);
+    border-color: var(--color-border);
+    background: var(--color-raised);
+  }
+
+  .ant-modal-title {
+    color: var(--color-text);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .ant-modal-close {
+    color: var(--color-text-muted);
+  }
+
+  .ant-modal-body {
+    padding: var(--space-4) var(--space-5);
+    color: var(--color-text);
+  }
+
+  .ant-modal-footer {
+    padding: var(--space-3) var(--space-5);
+    border-color: var(--color-border);
+    background: var(--color-raised);
+
+    .ant-btn {
+      min-width: 88px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+    }
+
+    .ant-btn + .ant-btn {
+      margin-inline-start: var(--space-2);
+    }
+  }
+
+  .ant-input, .ant-btn-default {
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
+  .ant-input {
+    min-height: 40px;
+    border-radius: var(--radius-sm);
+
+    &:hover,
+    &:focus {
+      border-color: var(--color-link);
+    }
+  }
+
+  .ant-btn-primary:not(:disabled) {
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    border-color: var(--color-primary);
+  }
+
+  .ant-btn-primary:disabled {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+  }
+
+  .ant-checkbox-inner {
+    background: var(--color-bg);
+    border-color: var(--color-border);
+  }
+
+  .ant-checkbox-checked .ant-checkbox-inner {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+}
+
+.delete-confirm-modal {
+  .ant-modal-content {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .ant-modal-body {
+    padding: var(--space-3) var(--space-5) var(--space-4);
+    background: var(--color-raised);
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+
+  .ant-modal-confirm-body {
+    display: flow-root;
+
+    > .anticon {
+      float: inline-start;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      margin: 0 var(--space-3) var(--space-2) 0;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+      color: var(--color-danger);
+      font-size: 18px;
+    }
+
+    .ant-modal-confirm-title {
+      display: block;
+      overflow: hidden;
+      color: var(--color-text);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .ant-modal-confirm-content {
+      min-width: 0;
+      margin: var(--space-2) 0 0 48px;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+  }
+
+  .ant-modal-confirm-btns {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+
+    .ant-btn {
+      min-width: 88px;
+      height: 38px;
+      margin: 0;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+    }
+
+    .ant-btn-default {
+      border-color: var(--color-border);
+      background: var(--color-bg-subtle);
+      color: var(--color-text);
+
+      &:hover,
+      &:focus {
+        border-color: var(--color-link);
+        background: var(--color-primary-soft);
+        color: var(--color-link);
+      }
+    }
+
+    .ant-btn-dangerous,
+    .ant-btn-primary.ant-btn-dangerous {
+      border-color: var(--color-danger);
+      background: var(--color-danger);
+      color: var(--color-danger-contrast);
+
+      &:hover,
+      &:focus {
+        border-color: var(--color-danger);
+        background: var(--color-danger);
+        filter: brightness(1.08);
+      }
+    }
+  }
+}
+
+@media (width < 560px) {
+  .forward-modal .ant-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: none;
+    margin: 16px auto;
+  }
+
+  .forward-modal .ant-modal-header,
+  .forward-modal .ant-modal-body,
+  .forward-modal .ant-modal-footer {
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+
+  .delete-confirm-modal .ant-modal {
+    width: calc(100vw - 32px) !important;
+    max-width: none;
+    margin: 16px auto;
+  }
+
+  .delete-confirm-modal .ant-modal-body {
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+}
+
+
+// Focus ring rõ ràng cho điều hướng bàn phím
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+// Lightbox (CDK Dialog)
+.lightbox-backdrop {
+  background: rgb(0 0 0 / 82%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

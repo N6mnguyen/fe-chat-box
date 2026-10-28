@@ -1,0 +1,70 @@
+<div class="auth-form">
+  <span class="auth-form__eyebrow">{{ 'auth.verificationEyebrow' | transloco }}</span>
+  <h2 class="auth-form__title">{{ (isDeviceChallenge ? 'auth.deviceTitle' : 'auth.verifyTitle') | transloco }}</h2>
+  <p class="auth-form__description">
+    {{ (isDeviceChallenge ? 'auth.deviceDescription' : 'auth.verifyDescription') | transloco }}
+    <strong>{{ challenge()?.maskedEmail }}</strong>
+  </p>
+
+  @if (serverError()) {
+    <div class="auth-form__alert" role="alert" aria-live="assertive">{{ serverError() }}</div>
+  }
+
+  <form (ngSubmit)="submit()" novalidate>
+    <div class="auth-field">
+      <label for="verification-code">{{ 'auth.otpLabel' | transloco }}</label>
+      <input
+        #otpInput
+        id="verification-code"
+        class="auth-otp"
+        type="text"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+        autocapitalize="off"
+        maxlength="6"
+        [formControl]="otp"
+        [placeholder]="'auth.otpPlaceholder' | transloco"
+        [attr.aria-invalid]="otp.touched && otp.invalid"
+        [attr.aria-describedby]="otp.touched && otp.invalid ? 'otp-error' : null"
+        (input)="updateOtp($event)"
+      />
+      @if (otp.touched && otp.invalid) {
+        <span id="otp-error" class="auth-field__error" aria-live="polite">{{ 'auth.errors.otpFormat' | transloco }}</span>
+      }
+    </div>
+
+    @if (isDeviceChallenge) {
+      <label class="auth-check">
+        <input type="checkbox" [checked]="trustDevice()" (change)="setTrustDevice($event)" />
+        <span>{{ 'auth.trustDevice' | transloco }}</span>
+      </label>
+    }
+
+    <button class="auth-submit" type="submit" [disabled]="pending() || otp.invalid">
+      @if (pending()) {
+        <span class="auth-submit__spinner" aria-hidden="true"></span>
+        {{ 'auth.verifying' | transloco }}
+      } @else {
+        {{ 'auth.verifyAction' | transloco }}
+      }
+    </button>
+  </form>
+
+  <p class="auth-form__resend" aria-live="polite">
+    @if (resendSeconds() > 0) {
+      {{ 'auth.resendCountdown' | transloco: { seconds: resendSeconds() } }}
+    } @else {
+      <button type="button" class="auth-link-button" [disabled]="pending()" (click)="resend()">
+        {{ 'auth.resendCode' | transloco }}
+      </button>
+    }
+  </p>
+
+  <p class="auth-form__switch">
+    <a routerLink="/auth/register">{{ 'auth.useDifferentEmail' | transloco }}</a>
+  </p>
+  <p class="auth-form__switch">
+    {{ 'auth.hasAccount' | transloco }}
+    <a routerLink="/auth/login">{{ 'auth.loginAction' | transloco }}</a>
+  </p>
+</div>
