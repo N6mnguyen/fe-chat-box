@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, Input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import { AvatarComponent } from '../../shared/avatar.component';
@@ -54,11 +54,16 @@ const SECTIONS: NavSection[] = [
 export class NavSidebarComponent {
   @Input() unread = 0;
   @Input() userName = '';
+  @Output() readonly logoutRequested = new EventEmitter<void>();
 
   readonly sections = SECTIONS;
   readonly appearanceOpen = signal(false);
   /** Các nhóm đang thu gọn (theo titleKey). */
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
+
+  logout(): void {
+    this.logoutRequested.emit();
+  }
 
   toggleAppearance(): void {
     this.appearanceOpen.update((open) => !open);

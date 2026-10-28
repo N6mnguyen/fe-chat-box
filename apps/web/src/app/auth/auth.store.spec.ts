@@ -24,6 +24,7 @@ describe('AuthStore', () => {
         kind: 'authenticated',
         session: { accessToken: 'access-1', refreshToken: 'refresh-1' },
       }),
+      loginWithGoogle: vi.fn().mockResolvedValue({ accessToken: 'access-g', refreshToken: 'refresh-g' }),
       verifyDevice: vi.fn().mockResolvedValue({
         accessToken: 'access-2',
         refreshToken: 'refresh-2',

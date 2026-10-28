@@ -36,7 +36,8 @@
     "night": "Đêm"
   },
   "me": {
-    "status": "Đang hoạt động"
+    "status": "Đang hoạt động",
+    "logout": "Đăng xuất"
   },
   "auth": {
     "language": "Ngôn ngữ",
@@ -46,8 +47,24 @@
     "welcomeTitle": "Kết nối theo cách của bạn.",
     "welcomeText": "Những cuộc trò chuyện quan trọng luôn ở đúng nơi, riêng tư và dễ dàng tiếp nối.",
     "privateByDesign": "Một không gian riêng cho những cuộc trò chuyện của bạn.",
+    "mascotStatusTitle": "Khỉ Con:",
+    "mascotStatusText": "Sẵn sàng để tiếp tục cuộc trò chuyện chưa nào?",
+    "communityCount": "500.000+",
+    "communityCaption": "Người dùng tin cậy & hoạt động",
+    "securityBadge": "Bảo mật đa tầng 2FA",
+    "serverStable": "Máy chủ ổn định",
+    "googleLogin": "Tiếp tục với Google",
+    "googleSigningIn": "Đang kết nối Google...",
+    "legalBefore": "Khi tiếp tục, bạn đồng ý với",
+    "legalAnd": "và",
+    "orUseEmail": "hoặc đăng nhập bằng email",
+    "footerNav": "Liên kết thông tin",
+    "support": "Hỗ trợ",
+    "terms": "Điều khoản",
+    "privacy": "Quyền riêng tư",
+    "copyright": "© {{ year }} NChat. Đã đăng ký bản quyền.",
     "loginEyebrow": "Chào mừng trở lại",
-    "loginTitle": "Đăng nhập",
+    "loginTitle": "Đăng nhập tài khoản",
     "loginDescription": "Đăng nhập để tiếp tục những cuộc trò chuyện của bạn.",
     "identifierLabel": "Tên đăng nhập hoặc email",
     "identifierPlaceholder": "Nhập tên đăng nhập hoặc email",

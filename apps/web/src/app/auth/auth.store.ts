@@ -8,6 +8,7 @@ import {
   AuthChallenge,
   AuthResult,
   AuthSession,
+  AuthUser,
   LoginRequest,
   OtpRequest,
   PasswordResetRequestResult,
@@ -16,12 +17,14 @@ import {
   VerifyDeviceRequest,
 } from './auth-api';
 import { SECURE_TOKEN_STORE } from './secure-token-store';
+import { clearStoredSession, loadStoredSession, saveStoredSession } from './session-storage';
 
 export type AuthStatus = 'unauthenticated' | 'authenticating' | 'otp-required' | 'authenticated';
 
 interface AuthState {
   status: AuthStatus;
   accessToken: string | null;
+  user: AuthUser | null;
   challenge: AuthChallenge | null;
   error: AuthApiErrorDetails | null;
 }
@@ -29,13 +32,22 @@ interface AuthState {
 const initialState: AuthState = {
   status: 'unauthenticated',
   accessToken: null,
+  user: null,
   challenge: null,
   error: null,
 };
 
+/** Khôi phục phiên đã lưu (còn hạn) để F5 không phải đăng nhập lại. */
+function restoredState(): AuthState {
+  const stored = loadStoredSession();
+  return stored
+    ? { ...initialState, status: 'authenticated', accessToken: stored.accessToken, user: stored.user }
+    : initialState;
+}
+
 export const AuthStore = signalStore(
   { providedIn: 'root' },
-  withState(initialState),
+  withState(restoredState()),
   withMethods((store, api = inject(AUTH_API), secureTokens = inject(SECURE_TOKEN_STORE)) => {
     const saveSession = async (session: AuthSession): Promise<void> => {
       try {
@@ -50,18 +62,22 @@ export const AuthStore = signalStore(
       patchState(store, {
         status: 'authenticated',
         accessToken: session.accessToken,
+        user: session.user ?? null,
         challenge: null,
         error: null,
       });
+      saveStoredSession({ accessToken: session.accessToken, user: session.user ?? null });
     };
 
     const failRequest = (error: unknown): never => {
       const details: AuthApiErrorDetails = error instanceof AuthApiError
         ? error.details
         : { code: 'UNKNOWN' };
+      clearStoredSession();
       patchState(store, {
         status: 'unauthenticated',
         accessToken: null,
+        user: null,
         challenge: null,
         error: details,
       });
@@ -112,6 +128,10 @@ export const AuthStore = signalStore(
         );
       },
 
+      async loginWithGoogle(): Promise<void> {
+        await run(() => api.loginWithGoogle(), saveSession);
+      },
+
       async verifyEmail(request: OtpRequest): Promise<void> {
         await run(() => api.verifyEmail(request), saveSession);
       },
@@ -151,6 +171,7 @@ export const AuthStore = signalStore(
       },
 
       async logout(): Promise<void> {
+        clearStoredSession();
         await secureTokens.clear();
         patchState(store, { ...initialState });
       },

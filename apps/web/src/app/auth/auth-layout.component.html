@@ -1,0 +1,86 @@
+<main class="auth">
+  <header class="auth__toolbar">
+    <button type="button" class="auth__theme" (click)="toggleTheme()">
+      {{ (isDarkTheme() ? 'auth.lightTheme' : 'auth.darkTheme') | transloco }}
+    </button>
+  </header>
+
+  <a class="auth__topbrand" routerLink="/auth/login" aria-label="NChat">
+    <span class="auth__brand-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path
+          d="M5 4.75h14A2.25 2.25 0 0 1 21.25 7v9A2.25 2.25 0 0 1 19 18.25h-7.1l-4.8 3.2v-3.2H5A2.25 2.25 0 0 1 2.75 16V7A2.25 2.25 0 0 1 5 4.75Z"
+        />
+        <path class="auth__brand-message" d="M7.5 9h9M7.5 12h6" />
+      </svg>
+    </span>
+    <span>NChat</span>
+  </a>
+
+  <section class="auth__card">
+    <aside class="auth__intro">
+      <div class="auth__welcome">
+        <span class="auth__eyebrow">{{ 'auth.welcomeEyebrow' | transloco }}</span>
+        <h1>{{ 'auth.welcomeTitle' | transloco }}</h1>
+        <p>{{ 'auth.welcomeText' | transloco }}</p>
+      </div>
+
+      <div class="auth__mascot-stage" aria-hidden="true">
+        <img class="auth__mascot" src="/favicon.png" alt="" />
+      </div>
+
+      <div class="auth__mascot-status">
+        <span class="auth__status-dot" aria-hidden="true"></span>
+        <strong>{{ 'auth.mascotStatusTitle' | transloco }}</strong>
+        <span class="auth__status-text">{{ 'auth.mascotStatusText' | transloco }}</span>
+        <span class="auth__status-sparkle" aria-hidden="true">✨</span>
+      </div>
+
+      <div class="auth__community">
+        <span class="auth__community-avatars" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+        <span class="auth__community-copy">
+          <strong>{{ 'auth.communityCount' | transloco }}</strong>
+          <span>{{ 'auth.communityCaption' | transloco }}</span>
+        </span>
+        <span class="auth__community-mark" aria-hidden="true">✓</span>
+      </div>
+    </aside>
+
+    <section class="auth__form-panel">
+      <router-outlet />
+    </section>
+  </section>
+
+  <footer class="auth__footer">
+    <label class="auth__language">
+      <svg class="auth__language-globe" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="9" />
+        <path
+          d="M3.5 12h17M12 3c2.4 2.5 3.5 5.5 3.5 9s-1.1 6.5-3.5 9c-2.4-2.5-3.5-5.5-3.5-9S9.6 5.5 12 3Z"
+        />
+      </svg>
+      <span class="visually-hidden">{{ 'auth.language' | transloco }}</span>
+      <select (change)="setLanguage($event)">
+        @for (lang of languages; track lang.code) {
+          <option [value]="lang.code" [selected]="lang.code === language()">
+            {{ lang.label }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <nav class="auth__footer-links" [attr.aria-label]="'auth.footerNav' | transloco">
+      <a href="/support">{{ 'auth.support' | transloco }}</a>
+      <a href="/terms">{{ 'auth.terms' | transloco }}</a>
+      <a href="/privacy">{{ 'auth.privacy' | transloco }}</a>
+    </nav>
+
+    <span class="auth__footer-note">
+      {{ 'auth.copyright' | transloco: { year: year } }}
+    </span>
+  </footer>
+</main>

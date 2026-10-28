@@ -14,6 +14,7 @@ import {
 
 import { translocoProviders } from './transloco';
 import { appRoutes } from './app.routes';
+import { GoogleAuthApi } from './auth/google-auth-api';
 import { provideAuth } from './auth/auth.providers';
 
 export const appConfig: ApplicationConfig = {
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(),
     provideRouter(appRoutes),
-    provideAuth(),
+    provideAuth(GoogleAuthApi),
     provideNzI18n(vi_VN),
     provideNzIcons([
       CheckCircleFill, CloseCircleFill, ExclamationCircleFill,

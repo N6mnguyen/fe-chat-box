@@ -34,8 +34,15 @@ export interface AuthChallenge {
   resendAfterSeconds: number;
 }
 
+export interface AuthUser {
+  name: string;
+  email?: string;
+  picture?: string;
+}
+
 export interface AuthSession {
   accessToken: string;
+  user?: AuthUser;
   refreshToken: string;
   deviceToken?: string;
 }
@@ -79,6 +86,7 @@ export interface AuthApi {
   register(request: RegisterRequest): Promise<AuthChallenge>;
   verifyEmail(request: OtpRequest): Promise<AuthSession>;
   login(request: LoginRequest): Promise<AuthResult>;
+  loginWithGoogle(): Promise<AuthSession>;
   verifyDevice(request: VerifyDeviceRequest): Promise<AuthSession>;
   requestPasswordReset(email: string): Promise<PasswordResetRequestResult>;
   resetPassword(request: ResetPasswordRequest): Promise<void>;

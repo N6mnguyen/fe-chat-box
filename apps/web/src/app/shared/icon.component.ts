@@ -37,7 +37,8 @@ export type IconName =
   | 'edit'
   | 'reply'
   | 'forward'
-  | 'trash';
+  | 'trash'
+  | 'logout';
 
 // Đường vẽ SVG (viewBox 24x24, nét 2px) để icon đồng nhất, không cần thư viện.
 const PATHS: Record<IconName, string> = {
@@ -79,6 +80,7 @@ const PATHS: Record<IconName, string> = {
   edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
   reply: 'M9 8L4 12l5 4M4 12h10a6 6 0 0 1 6 6',
   forward: 'M15 8l5 4-5 4m5-4H10a6 6 0 0 0-6 6',
+  logout: 'M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
 };
 

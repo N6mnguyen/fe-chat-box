@@ -81,6 +81,15 @@ export class MockAuthApi implements AuthApi {
     return { kind: 'authenticated', session: this.createSession() };
   }
 
+  async loginWithGoogle(): Promise<AuthSession> {
+    await this.delay();
+    this.throwForInfrastructureScenario();
+    if (this.scenario() === 'invalid-credentials') {
+      throw new AuthApiError({ code: 'INVALID_CREDENTIALS' });
+    }
+    return this.createSession();
+  }
+
   async verifyDevice(request: VerifyDeviceRequest): Promise<AuthSession> {
     await this.delay();
     this.throwForInfrastructureScenario();
