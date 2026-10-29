@@ -29,9 +29,19 @@
       <section class="friend-panel" [attr.aria-label]="'list.friends' | transloco">
         <div class="friend-panel__toolbar">
           <h2 class="friend-panel__heading">{{ 'list.friends' | transloco }}</h2>
-          <button type="button" class="friend-panel__refresh" (click)="refreshFriends()">
-            {{ 'list.refreshFriends' | transloco }}
-          </button>
+          <div class="friend-panel__actions">
+            <button type="button" class="friend-panel__refresh" (click)="refreshFriends()">
+              {{ 'list.refreshFriends' | transloco }}
+            </button>
+            <button
+              type="button"
+              class="friend-panel__close"
+              [attr.aria-label]="'common.close' | transloco"
+              (click)="friendPanelOpen.set(false)"
+            >
+              <app-icon name="close" />
+            </button>
+          </div>
         </div>
         <input
           class="friend-panel__input"
