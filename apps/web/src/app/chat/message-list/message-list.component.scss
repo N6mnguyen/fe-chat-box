@@ -205,12 +205,20 @@
 
 .empty {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--color-text-muted);
   text-align: center;
+
+  &__card {
+    max-width: min(100%, 440px);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-raised);
+    box-shadow: var(--shadow-pop);
+    color: var(--color-text);
+  }
 
   &__title {
     margin: 0;
@@ -219,6 +227,7 @@
 
   &__hint {
     margin: var(--space-1) 0 0;
+    color: var(--color-text-muted);
   }
 }
 
@@ -346,7 +355,7 @@
   white-space: pre-wrap;
 
   a {
-    color: var(--color-primary);
+    color: var(--color-link);
   }
 }
 
@@ -377,7 +386,7 @@
     flex: none;
     width: 32px;
     height: 32px;
-    color: var(--color-primary);
+    color: var(--color-link);
   }
 
   &__meta {

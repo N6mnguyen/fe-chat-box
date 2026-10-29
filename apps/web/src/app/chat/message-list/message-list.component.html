@@ -9,10 +9,12 @@
   >
     @if (rows.length === 0) {
       <div class="empty" role="status">
-        <p class="empty__title">{{ (searching ? 'messages.noResult' : 'messages.empty') | transloco }}</p>
-        @if (!searching) {
-          <p class="empty__hint">{{ 'messages.emptyHint' | transloco }}</p>
-        }
+        <div class="empty__card">
+          <p class="empty__title">{{ (searching ? 'messages.noResult' : 'messages.empty') | transloco }}</p>
+          @if (!searching) {
+            <p class="empty__hint">{{ 'messages.emptyHint' | transloco }}</p>
+          }
+        </div>
       </div>
     }
 

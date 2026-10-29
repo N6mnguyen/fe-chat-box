@@ -39,6 +39,7 @@ const TEXT_ON: [string, string][] = [
   ['color-text-muted', 'color-bg-subtle'],
   ['color-text-muted', 'color-primary-soft'],
   ['color-link', 'color-bg'],
+  ['color-link', 'color-primary-soft'],
   ['color-link', 'color-bubble-other'],
   ['color-primary-contrast', 'color-primary'],
   ['color-danger-contrast', 'color-danger'],
