@@ -427,6 +427,13 @@ textarea {
 
 }
 
+@media (width < 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
 
 // Focus ring rõ ràng cho điều hướng bàn phím
 :focus-visible {

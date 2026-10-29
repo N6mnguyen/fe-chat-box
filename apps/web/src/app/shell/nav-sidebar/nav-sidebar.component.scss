@@ -235,6 +235,8 @@
 @media (width < 768px) {
   .nav {
     flex-direction: row;
+    min-height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--color-border);
 
     &__scroll {
@@ -250,10 +252,15 @@
     }
 
     &__menu {
-      right: var(--space-2);
-      bottom: calc(100% + var(--space-2));
-      left: var(--space-2);
-      width: min(280px, calc(100vw - 16px));
+      position: fixed;
+      right: var(--space-3);
+      bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));
+      left: var(--space-3);
+      z-index: 20;
+      width: auto;
+      max-height: min(70dvh, calc(100dvh - 96px - env(safe-area-inset-bottom)));
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
   }
 
