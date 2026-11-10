@@ -47,14 +47,14 @@
     }
   }
   &__button--unknown {
-    border-color: color-mix(in srgb, var(--color-danger) 48%, var(--color-border));
+    border-color: var(--color-border);
     background: var(--color-raised);
-    color: var(--color-danger);
+    color: var(--color-text);
   }
   &__button--known {
-    border-color: color-mix(in srgb, var(--color-success) 48%, var(--color-border));
+    border-color: var(--color-border);
     background: var(--color-raised);
-    color: var(--color-success);
+    color: var(--color-text);
   }
   &__answer-icon {
     display: grid;
@@ -63,7 +63,7 @@
     flex: none;
     place-items: center;
     border-radius: 12px;
-    background: color-mix(in srgb, currentcolor 13%, var(--color-raised));
+    background: var(--color-bg-subtle);
 
     app-icon { width: 20px; height: 20px; }
   }
@@ -97,15 +97,41 @@
 @media (hover: hover) {
   .study__button--unknown:hover:not(:disabled) {
     border-color: var(--color-danger);
-    background: color-mix(in srgb, var(--color-danger) 13%, var(--color-raised));
+    background: color-mix(in srgb, var(--color-danger) 16%, var(--color-raised));
+    color: var(--color-danger);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 12%, transparent);
   }
 
   .study__button--known:hover:not(:disabled) {
     border-color: var(--color-success);
-    background: color-mix(in srgb, var(--color-success) 13%, var(--color-raised));
+    background: color-mix(in srgb, var(--color-success) 16%, var(--color-raised));
+    color: var(--color-success);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent);
   }
+}
+
+.study__button--unknown:focus-visible:not(:disabled) {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 16%, var(--color-raised));
+  color: var(--color-danger);
+}
+
+.study__button--known:focus-visible:not(:disabled) {
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 16%, var(--color-raised));
+  color: var(--color-success);
+}
+
+.study__button--unknown:active:not(:disabled) {
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 22%, var(--color-raised));
+  color: var(--color-danger);
+}
+
+.study__button--known:active:not(:disabled) {
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 22%, var(--color-raised));
+  color: var(--color-success);
 }
 
 .flashcard {
