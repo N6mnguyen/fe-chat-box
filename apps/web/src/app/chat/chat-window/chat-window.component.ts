@@ -29,6 +29,7 @@ import { MessageComposerComponent } from '../message-composer/message-composer.c
 import { MessageListComponent } from '../message-list/message-list.component';
 import { NQuizletCommand, NQuizletQuickCommandsComponent } from './nquizlet-quick-commands.component';
 import { StudyResultAction } from '../../vocab/study-result-card.component';
+import { VocabApiService, VocabLanguage, VocabStats, VocabWrongReview } from '../../vocab/vocab-api.service';
 
 @Component({
   selector: 'app-chat-window',
@@ -60,6 +61,15 @@ export class ChatWindowComponent implements OnChanges {
   readonly forwardTargets = signal<ReadonlySet<string>>(new Set());
   readonly forwarding = signal(false);
   readonly forwardSearch = signal('');
+  readonly showStatsRanges = signal(false);
+  readonly vocabLanguage = signal<VocabLanguage>('en');
+  readonly selectedStatsDays = signal<7 | 14 | 30 | null>(null);
+  readonly statsDashboard = signal<VocabStats | null>(null);
+  readonly statsLoading = signal(false);
+  readonly statsError = signal('');
+  readonly wrongReview = signal<VocabWrongReview | null>(null);
+  readonly wrongReviewLoading = signal(false);
+  readonly wrongReviewError = signal('');
   readonly targetConversations: ChatService['conversations'];
   @ViewChild(MessageComposerComponent) private composer?: MessageComposerComponent;
   readonly filteredTargets = computed(() => this.targetConversations()
@@ -70,6 +80,7 @@ export class ChatWindowComponent implements OnChanges {
     private readonly feedback: UiFeedbackService,
     private readonly chat: ChatService,
     private readonly router: Router,
+    private readonly vocabApi: VocabApiService,
   ) {
     this.targetConversations = chat.conversations;
   }
@@ -78,6 +89,12 @@ export class ChatWindowComponent implements OnChanges {
     if (changes['conversation'] && !changes['conversation'].firstChange) {
       this.replyMessage.set(null);
       this.forwardMessage.set(null);
+      this.showStatsRanges.set(false);
+      this.selectedStatsDays.set(null);
+      this.statsDashboard.set(null);
+      this.statsError.set('');
+      this.wrongReview.set(null);
+      this.wrongReviewError.set('');
     }
   }
 
@@ -96,23 +113,75 @@ export class ChatWindowComponent implements OnChanges {
   }
 
   onNQuizletCommand(command: NQuizletCommand | StudyResultAction): void {
-    if (command === 'disable_reminders') {
+    const action = typeof command === 'string' ? command : command.action;
+    if (typeof command !== 'string') {
+      this.vocabLanguage.set(command.language);
+    }
+    if (action === 'disable_reminders') {
       this.feedback.info('Cài đặt nhắc học sẽ có ở giai đoạn tiếp theo.');
       return;
     }
-    if (command === 'weekly_stats' || command === 'stats') {
-      void this.router.navigate(['/vocab'], { queryParams: { tab: 'stats' } });
+    if (action === 'stats') {
+      this.showStatsRanges.update((open) => !open);
       return;
     }
-    if (command === 'review_wrong') {
-      void this.router.navigate(['/vocab'], { queryParams: { review: 'wrong' } });
+    if (action === 'review_wrong') {
+      void this.loadWrongReview();
       return;
     }
-    if (command === 'review') {
-      void this.router.navigate(['/vocab'], { queryParams: { review: 'wrong' } });
+    if (action === 'review') {
+      void this.loadWrongReview();
       return;
     }
-    void this.router.navigateByUrl('/vocab');
+    void this.router.navigate(['/vocab'], { queryParams: { language: this.vocabLanguage() } });
+  }
+
+  async loadStats(days = this.selectedStatsDays()): Promise<void> {
+    if (days === null) {
+      return;
+    }
+    this.selectedStatsDays.set(days);
+    this.statsLoading.set(true);
+    this.statsError.set('');
+    this.statsDashboard.set(null);
+    try {
+      this.statsDashboard.set(await this.vocabApi.stats(days, this.vocabLanguage()));
+    } catch (error) {
+      console.error('Không tải được thống kê NQuizlet', error);
+      this.statsError.set(error instanceof Error ? error.message : 'Không tải được thống kê. Vui lòng thử lại.');
+    } finally {
+      this.statsLoading.set(false);
+    }
+  }
+
+  startStudyFromStats(): void {
+    void this.router.navigate(['/vocab'], { queryParams: { language: this.vocabLanguage() } });
+  }
+
+  async loadWrongReview(): Promise<void> {
+    this.showStatsRanges.set(false);
+    this.statsDashboard.set(null);
+    this.statsError.set('');
+    this.wrongReview.set(null);
+    this.wrongReviewLoading.set(true);
+    this.wrongReviewError.set('');
+    try {
+      this.wrongReview.set(await this.vocabApi.wrongReview(this.vocabLanguage()));
+    } catch (error) {
+      console.error('Không tải được danh sách từ sai của NQuizlet', error);
+      this.wrongReviewError.set(error instanceof Error ? error.message : 'Không tải được danh sách từ sai. Vui lòng thử lại.');
+    } finally {
+      this.wrongReviewLoading.set(false);
+    }
+  }
+
+  continueWrongReview(topicId: string | null): void {
+    void this.router.navigate(['/vocab'], {
+      queryParams: {
+        language: this.vocabLanguage(),
+        ...(topicId ? { review: 'wrong', topicId } : { review: 'wrong' }),
+      },
+    });
   }
 
   async onReact(event: { messageId: string; emoji: string }): Promise<void> {

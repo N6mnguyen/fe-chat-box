@@ -65,6 +65,7 @@ function isStudyResultPayload(value: unknown): value is StudyResultPayload {
   const result = value as Record<string, unknown>;
   return typeof result['sessionId'] === 'string'
     && typeof result['topic'] === 'string'
+    && (result['language'] === undefined || result['language'] === 'en' || result['language'] === 'zh')
     && (result['mode'] === 'flashcard' || result['mode'] === 'fill_blank' || result['mode'] === 'listen_fill')
     && Number.isInteger(result['wordCount'])
     && typeof result['score'] === 'number'

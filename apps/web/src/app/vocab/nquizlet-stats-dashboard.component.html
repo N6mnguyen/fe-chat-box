@@ -1,0 +1,80 @@
+<article class="dashboard" aria-labelledby="nquizlet-stats-title">
+  <header class="dashboard__header">
+    <span class="dashboard__mascot" aria-hidden="true">🐵</span>
+    <div>
+      <p class="dashboard__eyebrow">NQUIZLET · {{ stats.language === 'zh' ? 'TIẾNG TRUNG' : 'TIẾNG ANH' }}</p>
+      <h2 id="nquizlet-stats-title">Thống kê {{ periodLabel }} gần nhất</h2>
+      <p>Đây là tiến độ học từ vựng của bạn. Cố lên, mỗi ngày một chút nhé! 💙</p>
+    </div>
+  </header>
+
+  <section class="dashboard__summary" aria-label="Tổng quan học tập">
+    <article><strong>{{ stats.summary.totalWords }}</strong><span>Từ đã học</span></article>
+    <article><strong>{{ stats.summary.avgScore }}%</strong><span>Điểm trung bình</span></article>
+    <article><strong>{{ stats.summary.streak }} ngày</strong><span>Chuỗi học</span></article>
+    <article><strong>{{ stats.summary.dueToday }}</strong><span>Từ cần ôn hôm nay</span></article>
+  </section>
+
+  <section class="dashboard__chart" aria-labelledby="stats-chart-title">
+    <div class="dashboard__section-heading">
+      <h3 id="stats-chart-title">Số từ đã học mỗi ngày</h3>
+      @if (stats.summary.deltaVsPreviousPercent > 0) {
+        <span class="dashboard__delta dashboard__delta--up">+{{ stats.summary.deltaVsPreviousPercent }}% so với {{ periodLabel }} trước</span>
+      } @else if (stats.summary.deltaVsPreviousPercent < 0) {
+        <span class="dashboard__delta"> {{ stats.summary.deltaVsPreviousPercent }}% so với {{ periodLabel }} trước</span>
+      } @else {
+        <span class="dashboard__delta">Không đổi so với {{ periodLabel }} trước</span>
+      }
+    </div>
+
+    @if (stats.summary.totalWords === 0) {
+      <div class="dashboard__empty">
+        <p>Bạn chưa có buổi học nào trong khoảng thời gian này.</p>
+        <button type="button" (click)="studyRequested.emit()">Bắt đầu bài đầu tiên</button>
+      </div>
+    } @else {
+      <div class="chart-scroll">
+        <div class="chart" [class.chart--month]="stats.days === 30" role="img" [attr.aria-label]="'Biểu đồ số từ đã học theo ngày trong ' + periodLabel">
+          @for (day of stats.daily; track day.date) {
+            <div class="chart__day" [class.chart__day--today]="$last">
+              <span class="chart__value">{{ day.wordsStudied || '' }}</span>
+              <div class="chart__track">
+                <span class="chart__bar" [style.height.%]="barHeight(day)"></span>
+              </div>
+              <span class="chart__label">{{ dayLabel(day) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="dashboard__table-wrap">
+        <table>
+          <caption class="visually-hidden">Dữ liệu thống kê học tập theo ngày</caption>
+          <thead><tr><th>Ngày</th><th>Bài</th><th>Từ</th><th>Điểm TB</th><th>Phút</th></tr></thead>
+          <tbody>
+            @for (day of stats.daily; track day.date) {
+              <tr>
+                <th scope="row">{{ day.date }}</th>
+                <td>{{ day.sessions }}</td>
+                <td>{{ day.wordsStudied }}</td>
+                <td>{{ day.avgScorePercent }}%</td>
+                <td>{{ day.studyMinutes }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (stats.topWrongWords.length) {
+    <section class="dashboard__wrong" aria-labelledby="top-wrong-title">
+      <h3 id="top-wrong-title">Từ bạn hay nhầm</h3>
+      <ol>
+        @for (item of stats.topWrongWords; track item.word) {
+          <li><strong>{{ item.word }}</strong><span>{{ item.meaningVi }}</span><small>{{ item.wrongCount }} lần sai</small></li>
+        }
+      </ol>
+    </section>
+  }
+</article>

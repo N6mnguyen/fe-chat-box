@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { IconComponent } from '../shared/icon.component';
 import { VocabApiService, VocabStudyResult, VocabStudySession, VocabStudyWord } from './vocab-api.service';
+import { findVocabSpeechVoice, playVocabAudioBlob } from './vocab-study.utils';
 
 interface FlashcardQueueItem {
   word: VocabStudyWord;
@@ -95,6 +96,9 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
         firstPass: true,
         retryCount: 0,
       })));
+      if (session.language === 'zh' && session.words[0]) {
+        this.api.warmPronunciation(session.words[0].word);
+      }
       this.nextQuestionIndex = session.words.length;
       this.startTimer(session.startedAt);
     } catch (error) {
@@ -178,6 +182,10 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
       }
 
       this.currentIndex.update((index) => index + 1);
+      const nextWord = this.currentCard()?.word;
+      if (nextWord && session.language === 'zh') {
+        this.api.warmPronunciation(nextWord.word);
+      }
       this.flipped.set(false);
       if (this.currentIndex() >= this.queue().length) {
         this.completionPending.set(true);
@@ -219,8 +227,7 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
         await new Audio(word.audioUrl).play();
         return;
       } catch {
-        this.audioNotice.set('Không phát được tệp âm thanh. Thử lại bằng nút nghe.');
-        return;
+        // Fall through to speech synthesis when the audio file cannot be played.
       }
     }
     if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -228,9 +235,24 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const language = this.session()?.language === 'zh' ? 'zh' : 'en';
+    if (language === 'zh') {
+      try {
+        await playVocabAudioBlob(await this.api.pronunciation(word.word));
+        return;
+      } catch {
+        this.audioNotice.set('Chưa phát được âm thanh. Bấm nghe lại hoặc kiểm tra kết nối mạng.');
+        return;
+      }
+    }
+    const voice = await findVocabSpeechVoice(language);
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(word.word);
     utterance.lang = 'en-US';
+    if (voice) {
+      utterance.voice = voice;
+    }
     utterance.onerror = () => this.audioNotice.set('Không phát được âm thanh. Hãy bấm nghe lại.');
     window.speechSynthesis.speak(utterance);
   }
@@ -241,7 +263,9 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
   }
 
   returnToCourses(): void {
-    void this.router.navigateByUrl('/vocab');
+    void this.router.navigate(['/vocab'], {
+      queryParams: { language: this.session()?.language ?? 'en' },
+    });
   }
 
   retryFinish(): void {

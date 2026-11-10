@@ -318,7 +318,8 @@ h2 {
 .primary-button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 50px; gap: 8px; padding: 0 18px; border: 0; border-radius: 14px; background: var(--color-primary); color: var(--color-primary-contrast); font: inherit; font-weight: 700; cursor: pointer; }
 
 @media (max-width: 680px) {
-  .vocab__content { width: min(100% - 28px, 540px); }
+  .vocab { min-height: 100dvh; }
+  .vocab__content { width: min(calc(100% - 28px), 540px); }
   .vocab__topbar { min-height: 58px; padding: 0 15px; }
   .vocab__back-chat span { display: none; }
   .hero { min-height: 205px; margin-top: 16px; padding: 22px; border-radius: 20px; }
@@ -336,16 +337,18 @@ h2 {
   .course-grid { grid-template-columns: 1fr; gap: 10px; }
   .topic-card { min-height: 150px; padding: 15px; }
   .filters { overflow-x: auto; }
-  .filters button { flex: none; }
+  .filters button { flex: none; min-height: 40px; }
   .course-config { padding-top: 8px; }
   .course-config__intro { align-items: flex-start; gap: 13px; padding: 18px; }
   .course-config__icon { width: 55px; height: 55px; border-radius: 16px; font-size: 30px; }
   .course-config h1 { font-size: 22px; }
   .course-config__intro p:not(.eyebrow) { font-size: 13px; }
+  .choice-row { gap: 7px; }
+  .choice { min-height: 54px; }
   .config-section__heading { align-items: flex-start; flex-direction: column; gap: 3px; }
   .mode-grid { grid-template-columns: 1fr; }
-  .mode { min-height: 74px; }
-  .vocab__footer { padding: 28px 0 20px; }
+  .mode { min-height: 70px; padding: 12px; }
+  .vocab__footer { padding: 28px 0 calc(20px + env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

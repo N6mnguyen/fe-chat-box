@@ -14,6 +14,13 @@
       [meId]="meId"
       [typing]="typing"
       [query]="query()"
+      [statsDashboard]="statsDashboard()"
+      [statsLoading]="statsLoading()"
+      [statsError]="statsError()"
+      [selectedStatsDays]="selectedStatsDays()"
+      [wrongReview]="wrongReview()"
+      [wrongReviewLoading]="wrongReviewLoading()"
+      [wrongReviewError]="wrongReviewError()"
       (retryRequested)="onRetry($event)"
       (reacted)="onReact($event)"
       (editRequested)="onEdit($event)"
@@ -22,9 +29,21 @@
       (replyRequested)="onReply($event)"
       (forwardRequested)="onForward($event)"
       (studyAction)="onNQuizletCommand($event)"
+      (statsRetry)="loadStats()"
+      (studyRequested)="startStudyFromStats()"
+      (wrongReviewRetry)="loadWrongReview()"
+      (wrongReviewContinue)="continueWrongReview($event)"
     />
     @if (conversation.isBot) {
-      <app-nquizlet-quick-commands (commandSelected)="onNQuizletCommand($event)" />
+      <app-nquizlet-quick-commands
+        [showStatsRanges]="showStatsRanges()"
+        [selectedLanguage]="vocabLanguage()"
+        [selectedStatsDays]="selectedStatsDays()"
+        [loadingStats]="statsLoading()"
+        (commandSelected)="onNQuizletCommand($event)"
+        (languageSelected)="vocabLanguage.set($event)"
+        (statsRangeSelected)="loadStats($event)"
+      />
     } @else {
       <app-message-composer
         [sending]="sending()"

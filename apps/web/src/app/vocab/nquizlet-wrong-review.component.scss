@@ -1,0 +1,154 @@
+:host {
+  display: block;
+  width: min(100%, 620px);
+  margin: 8px 0 12px;
+}
+
+.wrong-review {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-pop);
+
+  &__header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  &__mascot {
+    display: grid;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    font-size: 21px;
+    place-items: center;
+  }
+
+  h2 {
+    margin: 0 0 5px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &__header p {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  &__words {
+    display: grid;
+    gap: 7px;
+    max-height: 300px;
+    margin: 0;
+    padding: 0 3px 0 0;
+    overflow-y: auto;
+    list-style: none;
+
+    li {
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--color-bg-subtle);
+    }
+  }
+
+  &__word-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    strong {
+      color: var(--color-text);
+      font-size: 15px;
+    }
+
+    span,
+    p small,
+    .wrong-review__example {
+      color: var(--color-text-muted);
+      font-size: 11px;
+    }
+
+    button {
+      margin-left: auto;
+      padding: 3px 8px;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-primary-soft);
+      color: var(--color-link);
+      font: inherit;
+      font-size: 11px;
+      cursor: pointer;
+    }
+  }
+
+  li > p {
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  &__answer {
+    color: var(--color-text-muted);
+  }
+
+  &__example {
+    display: block;
+    margin-top: 5px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+  }
+
+  &__error {
+    margin-top: 7px !important;
+    color: var(--color-danger, #ff7777);
+    font-size: 12px;
+  }
+
+  footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  footer button {
+    min-height: 38px;
+    padding: 8px 13px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--color-primary);
+    color: var(--color-primary-contrast);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+}
+
+@media (max-width: 520px) {
+  .wrong-review {
+    padding: 13px;
+    border-radius: 15px;
+
+    &__words { max-height: 240px; }
+
+    &__words li { padding: 9px; }
+
+    h2 { font-size: 14px; }
+  }
+
+  .wrong-review footer button {
+    width: 100%;
+  }
+}

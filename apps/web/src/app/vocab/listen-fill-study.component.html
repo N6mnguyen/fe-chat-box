@@ -1,6 +1,6 @@
 <main class="listen">
   <header class="listen__topbar">
-    <a class="listen__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    <a class="listen__brand" routerLink="/vocab" [queryParams]="{ language: session()?.language ?? 'en' }"><app-icon name="back" /> <span>NChat Vocab</span></a>
     @if (session(); as activeSession) {
       <div class="listen__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Nghe và điền từ</span></div>
       <span class="listen__timer"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
@@ -42,7 +42,7 @@
               @if (word.userAnswer) {
                 <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
               }
-              <small>{{ word.exampleEn }}</small>
+              <small>{{ word.exampleTarget ?? word.exampleEn }}</small>
             </article>
           }
         </section>
@@ -74,7 +74,7 @@
 
       <article class="listen__prompt" aria-live="polite">
         <span class="listen__prompt-icon" aria-hidden="true"><app-icon name="headphones" /></span>
-        <p>{{ listenStyle() === 'word' ? 'Nghe từ tiếng Anh và nhập lại từ đó.' : 'Nghe câu ví dụ, rồi nhập từ còn thiếu.' }}</p>
+        <p>{{ listenStyle() === 'word' ? (session()?.language === 'zh' ? 'Nghe từ tiếng Trung và nhập lại từ đó.' : 'Nghe từ tiếng Anh và nhập lại từ đó.') : 'Nghe câu ví dụ, rồi nhập từ còn thiếu.' }}</p>
         <span class="listen__context">{{ contextText() }}</span>
       </article>
 

@@ -38,7 +38,7 @@
           @if (word.userAnswer) {
             <p><span>Bạn đã nhập:</span> {{ word.userAnswer }}</p>
           }
-          <small>{{ word.exampleEn }}</small>
+          <small>{{ word.exampleTarget ?? word.exampleEn }}</small>
         </article>
       }
       @if (audioError()) {
@@ -55,8 +55,8 @@
   }
 
   <footer class="result-card__actions">
-    <button type="button" (click)="action.emit('review')">Ôn lại từ sai</button>
-    <button type="button" (click)="action.emit('stats')">Thống kê 7 ngày</button>
-    <button type="button" (click)="action.emit('study')">Học bộ khác</button>
+    <button type="button" (click)="action.emit({ action: 'review', language: result.language ?? 'en' })">Ôn lại từ sai</button>
+    <button type="button" (click)="action.emit({ action: 'stats', language: result.language ?? 'en' })">Thống kê 7 ngày</button>
+    <button type="button" (click)="action.emit({ action: 'study', language: result.language ?? 'en' })">Học bộ khác</button>
   </footer>
 </article>

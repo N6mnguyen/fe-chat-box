@@ -54,7 +54,14 @@ export class App implements OnInit {
   }
 
   ngOnInit(): void {
-    void this.chat.load();
+    void this.chat.load().then(() => {
+      if (this.chat.loadState() === 'ready') {
+        const firstConversation = this.chat.sortedConversations()[0];
+        if (firstConversation) {
+          this.chat.select(firstConversation.id);
+        }
+      }
+    });
   }
 
   async logout(): Promise<void> {

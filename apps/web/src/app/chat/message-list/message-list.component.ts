@@ -21,6 +21,9 @@ import { IconComponent } from '../../shared/icon.component';
 import { formatFileSize, normalizeText, splitLinks, TextPart } from '../../shared/text.util';
 import { UiFeedbackService } from '../../shared/ui-feedback.service';
 import { StudyResultAction, StudyResultCardComponent } from '../../vocab/study-result-card.component';
+import { NQuizletStatsDashboardComponent } from '../../vocab/nquizlet-stats-dashboard.component';
+import { NQuizletWrongReviewComponent } from '../../vocab/nquizlet-wrong-review.component';
+import { VocabStats, VocabWrongReview } from '../../vocab/vocab-api.service';
 import { canDeleteForAll, canEditMessage } from '../chat.service';
 import { Attachment, Conversation, Message } from '../chat.models';
 
@@ -72,6 +75,8 @@ const DEFAULT_RATIO = 4 / 3;
     AvatarComponent,
     IconComponent,
     StudyResultCardComponent,
+    NQuizletStatsDashboardComponent,
+    NQuizletWrongReviewComponent,
     CdkContextMenuTrigger,
     CdkMenu,
     CdkMenuItem,
@@ -87,6 +92,13 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
   @Input({ required: true }) meId = '';
   @Input() typing = false;
   @Input() query = '';
+  @Input() statsDashboard: VocabStats | null = null;
+  @Input() statsLoading = false;
+  @Input() statsError = '';
+  @Input() selectedStatsDays: 7 | 14 | 30 | null = null;
+  @Input() wrongReview: VocabWrongReview | null = null;
+  @Input() wrongReviewLoading = false;
+  @Input() wrongReviewError = '';
 
   @Output() retryRequested = new EventEmitter<string>();
   @Output() editRequested = new EventEmitter<{ messageId: string; content: string }>();
@@ -96,6 +108,10 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
   @Output() forwardRequested = new EventEmitter<Message>();
   @Output() reacted = new EventEmitter<{ messageId: string; emoji: string }>();
   @Output() studyAction = new EventEmitter<StudyResultAction>();
+  @Output() statsRetry = new EventEmitter<void>();
+  @Output() studyRequested = new EventEmitter<void>();
+  @Output() wrongReviewRetry = new EventEmitter<void>();
+  @Output() wrongReviewContinue = new EventEmitter<string | null>();
 
   /** Bộ reaction nhanh, đặt ở hằng số để template không tự tạo mảng mỗi lần render. */
   readonly quickReactions = QUICK_REACTIONS;
@@ -137,6 +153,11 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
     }
     this.searching = this.query.trim().length > 0;
     this.rows = this.buildRows();
+    if (changes['statsDashboard'] || changes['statsLoading'] || changes['statsError']) {
+      if (this.stickToBottom) {
+        this.forceScroll = true;
+      }
+    }
 
     const added = this.messages.length - this.lastCount;
     const last = this.messages[this.messages.length - 1];

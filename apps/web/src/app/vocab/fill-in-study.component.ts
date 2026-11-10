@@ -43,7 +43,7 @@ export class FillInStudyComponent implements OnInit, OnDestroy {
   readonly currentWord = computed(() => this.words()[this.currentIndex()] ?? null);
   readonly questionText = computed(() => {
     const word = this.currentWord();
-    return word ? maskWord(word.exampleEn, word.word) : '';
+    return word ? maskWord(word.exampleTarget ?? word.exampleEn, word.word) : '';
   });
   readonly hintText = computed(() => {
     const word = this.currentWord();
@@ -186,7 +186,9 @@ export class FillInStudyComponent implements OnInit, OnDestroy {
   }
 
   returnToCourses(): void {
-    void this.router.navigateByUrl('/vocab');
+    void this.router.navigate(['/vocab'], {
+      queryParams: { language: this.session()?.language ?? 'en' },
+    });
   }
 
   retryBotResult(): void {

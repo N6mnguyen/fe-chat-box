@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { IconComponent } from '../shared/icon.component';
 import { VocabApiService, VocabStudyResult, VocabStudySession, VocabStudyWord } from './vocab-api.service';
-import { normalizeVocabAnswer } from './vocab-study.utils';
+import { findVocabSpeechVoice, normalizeVocabAnswer, playVocabAudioBlob } from './vocab-study.utils';
 
 type ListenStyle = 'word' | 'sentence';
 
@@ -47,7 +47,7 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
   readonly currentWord = computed(() => this.words()[this.currentIndex()] ?? null);
   readonly promptText = computed(() => {
     const word = this.currentWord();
-    return !word ? '' : this.listenStyle() === 'word' ? word.word : word.exampleEn;
+    return !word ? '' : this.listenStyle() === 'word' ? word.word : word.exampleTarget ?? word.exampleEn;
   });
   readonly contextText = computed(() => {
     const word = this.currentWord();
@@ -103,6 +103,9 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
     try {
       const session = await this.api.startSession(topicId, wordCount, 'listen_fill');
       this.session.set(session);
+      if (session.language === 'zh' && session.words[0]) {
+        this.api.warmPronunciation(session.words[0].word);
+      }
       this.preloadAudio(session.words);
       this.startTimer(session.startedAt);
     } catch (error) {
@@ -122,6 +125,9 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
   chooseListenStyle(style: ListenStyle): void {
     this.listenStyle.set(style);
     this.audioNotice.set('');
+    if (this.session()?.language === 'zh') {
+      this.api.warmPronunciation(this.promptText());
+    }
   }
 
   async playPrompt(slow = false): Promise<void> {
@@ -158,9 +164,31 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const language = this.session()?.language === 'zh' ? 'zh' : 'en';
+    if (language === 'zh') {
+      try {
+        const audio = await playVocabAudioBlob(await this.api.pronunciation(this.promptText()), slow ? 0.75 : 1);
+        this.playing.set(true);
+        audio.onended = () => this.playing.set(false);
+        audio.onerror = () => {
+          this.playing.set(false);
+          this.audioNotice.set('Chưa phát được âm thanh. Bấm nghe lại hoặc kiểm tra kết nối mạng.');
+        };
+        return;
+      } catch {
+        this.playing.set(false);
+        this.audioNotice.set('Chưa phát được âm thanh. Bấm nghe lại hoặc kiểm tra kết nối mạng.');
+        return;
+      }
+    }
+    const voice = await findVocabSpeechVoice(language);
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(this.promptText());
     utterance.lang = 'en-US';
+    if (voice) {
+      utterance.voice = voice;
+    }
     utterance.rate = slow ? 0.75 : 1;
     utterance.onstart = () => this.playing.set(true);
     utterance.onend = () => this.playing.set(false);
@@ -196,6 +224,9 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
       return;
     }
     this.currentIndex.update((index) => index + 1);
+    if (this.session()?.language === 'zh') {
+      this.api.warmPronunciation(this.promptText());
+    }
     this.answerText.set('');
     this.submittedAnswer.set('');
     this.checked.set(null);
@@ -211,7 +242,9 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
   }
 
   returnToCourses(): void {
-    void this.router.navigateByUrl('/vocab');
+    void this.router.navigate(['/vocab'], {
+      queryParams: { language: this.session()?.language ?? 'en' },
+    });
   }
 
   retryBotResult(): void {

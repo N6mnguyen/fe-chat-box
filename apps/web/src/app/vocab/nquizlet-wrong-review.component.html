@@ -1,0 +1,44 @@
+<article class="wrong-review" aria-labelledby="nquizlet-wrong-review-title">
+  <header class="wrong-review__header">
+    <span class="wrong-review__mascot" aria-hidden="true">🐵</span>
+    <div>
+      <h2 id="nquizlet-wrong-review-title">
+        @if (review.words.length) {
+          Mình tìm thấy {{ review.words.length }} từ bạn trả lời sai hôm nay.
+        } @else {
+          Hôm nay bạn chưa có từ nào trả lời sai.
+        }
+      </h2>
+      <p>Bạn có muốn vào NChat Vocab để học tiếp không? Mình sẽ ưu tiên chủ đề có từ cần ôn nhé. 💙</p>
+    </div>
+  </header>
+
+  @if (review.words.length) {
+    <ol class="wrong-review__words">
+      @for (word of review.words; track word.id) {
+        <li>
+          <div class="wrong-review__word-heading">
+            <strong>{{ word.word }}</strong>
+            @if (word.phonetic) {
+              <span>{{ word.phonetic }}</span>
+            }
+            <button type="button" [attr.aria-label]="'Nghe phát âm từ ' + word.word" (click)="speak(word)">Nghe</button>
+          </div>
+          <p>{{ word.meaningVi }} <small>· {{ word.topic }}</small></p>
+          <p class="wrong-review__answer">Bạn đã trả lời: <strong>{{ word.userAnswer || 'Bỏ qua' }}</strong></p>
+          <small class="wrong-review__example">{{ word.exampleTarget || word.exampleEn }}</small>
+        </li>
+      }
+    </ol>
+  }
+
+  @if (audioError()) {
+    <p class="wrong-review__error" role="status">{{ audioError() }}</p>
+  }
+
+  <footer>
+    <button type="button" (click)="continueRequested.emit(firstTopicId)">
+      {{ review.words.length ? 'Có, vào NChat Vocab học tiếp' : 'Vào NChat Vocab' }}
+    </button>
+  </footer>
+</article>

@@ -43,6 +43,12 @@
   }
 }
 
+@media (width >= 768px) and (width < 1024px) {
+  .shell {
+    grid-template-columns: 64px minmax(260px, 32vw) minmax(0, 1fr);
+  }
+}
+
 // Mobile: 1 cột (danh sách hoặc chat) + thanh điều hướng dưới.
 @media (width < 768px) {
   .shell {
@@ -70,5 +76,35 @@
     &:not(&--chat) &__chat {
       display: none;
     }
+  }
+
+  .vocab .topic-group { margin-top: 22px; }
+  .vocab .topic-group h3 { margin: 0 0 12px; font-size: 18px; }
+  .vocab .grammar-courses { display: grid; gap: 10px; margin: 42px 0 0; }
+  .vocab .grammar-courses h2 { margin: -5px 0 5px; font-size: 23px; }
+  .vocab .grammar-course { padding: 15px 18px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-raised); }
+  .vocab .grammar-course summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; cursor: pointer; }
+  .vocab .grammar-course summary span, .vocab .grammar-course li span, .vocab .grammar-course > p { color: var(--color-text-muted); font-size: 13px; }
+  .vocab .grammar-course ul { display: grid; gap: 10px; padding-left: 20px; }
+  .vocab .grammar-course li strong, .vocab .grammar-course li span { display: block; }
+  .vocab .grammar-course > p { margin-bottom: 0; }
+
+  @media (height < 560px) and (width < 768px) {
+    .shell {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+  }
+}
+
+@media (width < 380px) {
+  .vocab .language-switch {
+    display: flex;
+    width: 100%;
+  }
+
+  .vocab .language-switch button {
+    flex: 1;
+    padding-inline: 8px;
+    white-space: normal;
   }
 }

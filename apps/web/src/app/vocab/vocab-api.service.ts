@@ -3,12 +3,19 @@ import { Inject, Injectable } from '@angular/core';
 import { API_BASE_URL } from '../api-base-url';
 import { AuthStore } from '../auth/auth.store';
 
+export type VocabLanguage = 'en' | 'zh';
+
 export interface VocabTopic {
   id: string;
   slug: string;
   name: string;
   icon: string;
   description: string;
+  language: VocabLanguage;
+  levelSlug: string | null;
+  groupSlug: string;
+  groupName: string;
+  groupOrder: number;
   wordCount: number;
   masteredCount: number;
   learningCount: number;
@@ -24,6 +31,52 @@ export interface VocabOverview {
   };
 }
 
+export interface VocabGrammarCourse {
+  level: string;
+  title: string;
+  proficiency: string;
+  grammarItems: Array<{ title: string; explanation: string }>;
+  skills: string[];
+}
+
+export interface VocabStatsDay {
+  date: string;
+  sessions: number;
+  wordsStudied: number;
+  avgScorePercent: number;
+  studyMinutes: number;
+}
+
+export interface VocabStats {
+  language: VocabLanguage;
+  days: 7 | 14 | 30;
+  daily: VocabStatsDay[];
+  summary: {
+    totalWords: number;
+    avgScore: number;
+    streak: number;
+    dueToday: number;
+    deltaVsPreviousPercent: number;
+  };
+  topWrongWords: Array<{ word: string; meaningVi: string; wrongCount: number }>;
+}
+
+export interface VocabWrongReview {
+  words: Array<{
+    id: string;
+    topicId: string;
+    topic: string;
+    language: VocabLanguage;
+    word: string;
+    phonetic: string;
+    meaningVi: string;
+    exampleEn: string;
+    exampleTarget: string;
+    audioUrl: string | null;
+    userAnswer: string;
+  }>;
+}
+
 export interface VocabStudyWord {
   id: string;
   word: string;
@@ -31,6 +84,7 @@ export interface VocabStudyWord {
   partOfSpeech: string;
   meaningVi: string;
   exampleEn: string;
+  exampleTarget?: string;
   exampleVi: string;
   audioUrl: string | null;
   alternativeAnswers?: string[];
@@ -41,6 +95,9 @@ export interface VocabStudySession {
   sessionId: string;
   topicId: string;
   topic: string;
+  language: VocabLanguage;
+  level: string | null;
+  groupName: string;
   mode: 'flashcard' | 'fill_blank' | 'listen_fill';
   wordCount: number;
   startedAt: string;
@@ -50,6 +107,7 @@ export interface VocabStudySession {
 export interface VocabStudyResult {
   sessionId: string;
   topic: string;
+  language: VocabLanguage;
   mode: 'flashcard' | 'fill_blank' | 'listen_fill';
   wordCount: number;
   score: number;
@@ -79,11 +137,60 @@ export class VocabApiError extends Error {
 @Injectable({ providedIn: 'root' })
 export class VocabApiService {
   private refreshInFlight?: Promise<string>;
+  private readonly pronunciationCache = new Map<string, Promise<Blob>>();
 
   constructor(@Inject(AuthStore) private readonly auth: InstanceType<typeof AuthStore>) {}
 
-  overview(): Promise<VocabOverview> {
-    return this.request('/v1/vocab/overview');
+  overview(language: VocabLanguage = 'en'): Promise<VocabOverview> {
+    return this.request(`/v1/vocab/overview?language=${language}`);
+  }
+
+  grammar(language: VocabLanguage, level?: string): Promise<{ courses: VocabGrammarCourse[] }> {
+    const params = new URLSearchParams({ language });
+    if (level) {
+      params.set('level', level);
+    }
+    return this.request(`/v1/vocab/grammar?${params.toString()}`);
+  }
+
+  stats(days: 7 | 14 | 30, language: VocabLanguage = 'en'): Promise<VocabStats> {
+    return this.request(`/v1/vocab/stats?days=${days}&language=${language}`);
+  }
+
+  wrongReview(language: VocabLanguage = 'en'): Promise<VocabWrongReview> {
+    return this.request(`/v1/vocab/review/wrong?language=${language}`);
+  }
+
+  pronunciation(text: string): Promise<Blob> {
+    const key = text.trim();
+    const cached = this.pronunciationCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const request = this.requestAudio('/v1/vocab/pronunciation/audio', {
+      method: 'POST',
+      body: JSON.stringify({ text: key }),
+    });
+    this.pronunciationCache.set(key, request);
+    request.catch(() => {
+      if (this.pronunciationCache.get(key) === request) {
+        this.pronunciationCache.delete(key);
+      }
+    });
+    if (this.pronunciationCache.size > 40) {
+      const oldest = this.pronunciationCache.keys().next().value;
+      if (oldest) {
+        this.pronunciationCache.delete(oldest);
+      }
+    }
+    return request;
+  }
+
+  warmPronunciation(text: string): void {
+    void this.pronunciation(text).catch((error: unknown) => {
+      console.warn('Không tải trước được phát âm tiếng Trung', error);
+    });
   }
 
   startSession(
@@ -164,6 +271,51 @@ export class VocabApiService {
       );
     }
     return payload as T;
+  }
+
+  private async requestAudio(path: string, init: RequestInit, canRefresh = true): Promise<Blob> {
+    const accessToken = this.auth.accessToken();
+    if (!accessToken) {
+      throw new VocabApiError(401, 'UNAUTHENTICATED', 'Bạn cần đăng nhập lại.');
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers: {
+          ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+          Authorization: `Bearer ${accessToken}`,
+          ...init.headers,
+        },
+      });
+    } catch (error) {
+      throw new VocabApiError(0, 'NETWORK_ERROR', error instanceof Error ? error.message : 'Không kết nối được máy chủ.');
+    }
+
+    if (response.status === 401 && canRefresh) {
+      await this.refreshAccessToken();
+      return this.requestAudio(path, init, false);
+    }
+    if (!response.ok) {
+      let payload: { code?: string; message?: string };
+      try {
+        payload = await response.json() as { code?: string; message?: string };
+      } catch {
+        throw new VocabApiError(502, 'INVALID_RESPONSE', 'Máy chủ trả về dữ liệu phát âm không hợp lệ.');
+      }
+      throw new VocabApiError(
+        response.status,
+        payload.code ?? 'PRONUNCIATION_FAILED',
+        payload.message ?? 'Không tải được phát âm tiếng Trung.',
+      );
+    }
+
+    const audio = await response.blob();
+    if (!audio.size || !audio.type.startsWith('audio/')) {
+      throw new VocabApiError(502, 'INVALID_AUDIO', 'Máy chủ không trả về dữ liệu âm thanh hợp lệ.');
+    }
+    return audio;
   }
 
   private refreshAccessToken(): Promise<string> {

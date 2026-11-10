@@ -1,6 +1,6 @@
 <main class="study">
   <header class="study__topbar">
-    <a class="study__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    <a class="study__brand" routerLink="/vocab" [queryParams]="{ language: session()?.language ?? 'en' }"><app-icon name="back" /> <span>NChat Vocab</span></a>
     @if (session(); as activeSession) {
       <div class="study__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Flashcard</span></div>
       <span class="study__timer" aria-label="Thời gian học"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
@@ -43,7 +43,7 @@
               @if (word.userAnswer) {
                 <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
               }
-              <small>{{ word.exampleEn }}</small>
+              <small>{{ word.exampleTarget ?? word.exampleEn }}</small>
             </article>
           }
         </section>
@@ -89,7 +89,7 @@
             <span class="flashcard__hint">TỪ VỰNG</span>
             <strong class="flashcard__word">{{ card.word.word }}</strong>
             <span class="flashcard__phonetic">{{ card.word.phonetic }} <span>·</span> {{ card.word.partOfSpeech }}</span>
-            <button type="button" class="flashcard__listen" aria-label="Nghe phát âm từ tiếng Anh" (click)="$event.stopPropagation(); speak()">
+            <button type="button" class="flashcard__listen" [attr.aria-label]="session()?.language === 'zh' ? 'Nghe phát âm tiếng Trung' : 'Nghe phát âm tiếng Anh'" (click)="$event.stopPropagation(); speak()">
               <app-icon name="headphones" /> Nghe phát âm
             </button>
             <span class="flashcard__flip-hint"><app-icon name="cards" /> Chạm hoặc nhấn Space để lật thẻ</span>
@@ -98,10 +98,10 @@
             <span class="flashcard__hint">NGHĨA TIẾNG VIỆT</span>
             <strong class="flashcard__meaning">{{ card.word.meaningVi }}</strong>
             <div class="flashcard__example">
-              <p>{{ card.word.exampleEn }}</p>
+              <p>{{ card.word.exampleTarget ?? card.word.exampleEn }}</p>
               <span>{{ card.word.exampleVi }}</span>
             </div>
-            <button type="button" class="flashcard__listen" aria-label="Nghe phát âm từ tiếng Anh" (click)="$event.stopPropagation(); speak()">
+            <button type="button" class="flashcard__listen" [attr.aria-label]="session()?.language === 'zh' ? 'Nghe phát âm tiếng Trung' : 'Nghe phát âm tiếng Anh'" (click)="$event.stopPropagation(); speak()">
               <app-icon name="headphones" /> Nghe lại
             </button>
           </article>
@@ -119,11 +119,25 @@
         @if (!flipped()) {
           <button type="button" class="study__button study__button--reveal" (click)="flip()">Lật thẻ <app-icon name="arrow-right" /></button>
         } @else {
-          <button type="button" class="study__button study__button--unknown" [disabled]="saving() || pendingAnswer() !== null" (click)="answer(false)">
-            <app-icon name="close" /> Chưa nhớ
+          <button
+            type="button"
+            class="study__button study__button--unknown"
+            aria-label="Chưa nhớ từ này, sẽ gặp lại từ ở cuối bài"
+            [disabled]="saving() || pendingAnswer() !== null"
+            (click)="answer(false)"
+          >
+            <span class="study__answer-icon" aria-hidden="true"><app-icon name="close" /></span>
+            <span class="study__answer-copy"><strong>Chưa nhớ</strong><small>Từ sẽ xuất hiện lại ở cuối bài</small></span>
           </button>
-          <button type="button" class="study__button study__button--known" [disabled]="saving() || pendingAnswer() !== null" (click)="answer(true)">
-            <app-icon name="check" /> Đã nhớ
+          <button
+            type="button"
+            class="study__button study__button--known"
+            aria-label="Đã nhớ từ này, chuyển sang từ tiếp theo"
+            [disabled]="saving() || pendingAnswer() !== null"
+            (click)="answer(true)"
+          >
+            <span class="study__answer-icon" aria-hidden="true"><app-icon name="check" /></span>
+            <span class="study__answer-copy"><strong>Đã nhớ</strong><small>Chuyển sang từ tiếp theo</small></span>
           </button>
         }
       </div>

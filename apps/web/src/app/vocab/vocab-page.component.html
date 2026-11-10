@@ -74,11 +74,21 @@
         </button>
       </section>
     } @else {
+      <div class="language-switch" role="group" aria-label="Chọn ngôn ngữ học">
+        <button type="button" [class.language-switch__selected]="language() === 'en'" [attr.aria-pressed]="language() === 'en'" (click)="selectLanguage('en')">English</button>
+        <button type="button" [class.language-switch__selected]="language() === 'zh'" [attr.aria-pressed]="language() === 'zh'" (click)="selectLanguage('zh')">中文 · Tiếng Trung</button>
+      </div>
       <section class="hero">
         <div class="hero__copy">
-          <p class="eyebrow">HỌC MỖI NGÀY · TIẾN BỘ MỖI NGÀY</p>
-          <h1>Chinh phục từ vựng<br />cùng NChat <span>Vocab</span></h1>
-          <p>Chỉ vài phút mỗi ngày để tự tin hơn với tiếng Anh công việc và TOEIC.</p>
+          @if (language() === 'zh') {
+            <p class="eyebrow">LỘ TRÌNH HSK · HỌC THEO CẤP ĐỘ</p>
+            <h1>Chinh phục tiếng Trung<br />cùng NChat <span>Vocab</span></h1>
+            <p>Học từ vựng theo 70 chủ đề từ HSK 1 đến nhóm HSK 7–9, kết hợp luyện ngữ pháp.</p>
+          } @else {
+            <p class="eyebrow">HỌC MỖI NGÀY · TIẾN BỘ MỖI NGÀY</p>
+            <h1>Chinh phục từ vựng<br />cùng NChat <span>Vocab</span></h1>
+            <p>Chỉ vài phút mỗi ngày để tự tin hơn với tiếng Anh công việc và TOEIC.</p>
+          }
         </div>
         <div class="hero__mascot" role="img" aria-label="Khỉ xanh NChat sẵn sàng học cùng bạn">
           <img src="/favicon.png" alt="" /><i><app-icon name="book" /></i>
@@ -130,27 +140,49 @@
             <button type="button" class="secondary-button" (click)="load()">Thử lại</button>
           </div>
         } @else if (filteredTopics().length) {
-          <div class="course-grid">
-            @for (topic of filteredTopics(); track topic.id) {
-              <button type="button" class="topic-card" (click)="chooseTopic(topic)" [attr.aria-label]="'Chọn chủ đề ' + topic.name">
-                <span class="topic-card__icon" aria-hidden="true">{{ topic.icon }}</span>
-                <span class="topic-card__body">
-                  <strong class="topic-card__name">{{ topic.name }}</strong>
-                  <span class="topic-card__description">{{ topic.description }}</span>
-                  <span class="topic-card__meta">{{ topic.wordCount }} từ <span>·</span> {{ topic.masteredCount }} từ đã thuộc</span>
-                  <span class="progress" role="progressbar" [attr.aria-label]="'Tiến độ ' + topic.name" [attr.aria-valuenow]="topic.progressPercent" aria-valuemin="0" aria-valuemax="100">
-                    <span class="progress__bar" [style.width.%]="topic.progressPercent"></span>
-                  </span>
-                  <span class="topic-card__percent">{{ topic.progressPercent }}% hoàn thành</span>
-                </span>
-                <app-icon class="topic-card__arrow" name="arrow-right" />
-              </button>
-            }
-          </div>
+          @for (group of topicGroups(); track group.slug) {
+            <section class="topic-group" [attr.aria-label]="group.name">
+              <h3>{{ group.name }}</h3>
+              <div class="course-grid">
+                @for (topic of group.topics; track topic.id) {
+                  <button type="button" class="topic-card" (click)="chooseTopic(topic)" [attr.aria-label]="'Chọn chủ đề ' + topic.name">
+                    <span class="topic-card__icon" aria-hidden="true">{{ topic.icon }}</span>
+                    <span class="topic-card__body">
+                      <strong class="topic-card__name">{{ topic.name }}</strong>
+                      <span class="topic-card__description">{{ topic.description }}</span>
+                      <span class="topic-card__meta">{{ topic.wordCount }} từ <span>·</span> {{ topic.masteredCount }} từ đã thuộc</span>
+                      <span class="progress" role="progressbar" [attr.aria-label]="'Tiến độ ' + topic.name" [attr.aria-valuenow]="topic.progressPercent" aria-valuemin="0" aria-valuemax="100">
+                        <span class="progress__bar" [style.width.%]="topic.progressPercent"></span>
+                      </span>
+                      <span class="topic-card__percent">{{ topic.progressPercent }}% hoàn thành</span>
+                    </span>
+                    <app-icon class="topic-card__arrow" name="arrow-right" />
+                  </button>
+                }
+              </div>
+            </section>
+          }
         } @else {
           <div class="state-card">Không tìm thấy chủ đề phù hợp. Hãy thử từ khóa hoặc bộ lọc khác.</div>
         }
       </section>
+      @if (language() === 'zh') {
+        <section class="grammar-courses" aria-labelledby="grammar-courses-title">
+          <p class="eyebrow">NGỮ PHÁP VÀ KỸ NĂNG</p>
+          <h2 id="grammar-courses-title">Lộ trình theo cấp độ HSK</h2>
+          @for (course of grammarCourses(); track course.level) {
+            <details class="grammar-course">
+              <summary><strong>{{ course.title }}</strong><span>{{ course.proficiency }}</span></summary>
+              <ul>
+                @for (item of course.grammarItems; track item.title) {
+                  <li><strong>{{ item.title }}</strong><span>{{ item.explanation }}</span></li>
+                }
+              </ul>
+              <p>Kỹ năng: {{ course.skills.join(' · ') }}</p>
+            </details>
+          }
+        </section>
+      }
     }
 
     <footer class="vocab__footer">Học đều một chút mỗi ngày — bạn sẽ tiến xa hơn mình nghĩ.</footer>

@@ -153,3 +153,18 @@
     }
   }
 }
+
+@media (max-width: 520px) {
+  .result-card {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 14px;
+
+    &__header h3 { font-size: 14px; }
+    &__header p, &__duration, &__perfect { font-size: 12px; }
+    &__score { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+    &__score strong { justify-self: end; font-size: 13px; }
+    &__actions { display: grid; grid-template-columns: 1fr; }
+    &__actions button { min-height: 40px; }
+  }
+}

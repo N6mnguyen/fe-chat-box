@@ -1,6 +1,6 @@
 <main class="fill-in">
   <header class="fill-in__topbar">
-    <a class="fill-in__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    <a class="fill-in__brand" routerLink="/vocab" [queryParams]="{ language: session()?.language ?? 'en' }"><app-icon name="back" /> <span>NChat Vocab</span></a>
     @if (session(); as activeSession) {
       <div class="fill-in__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Điền từ</span></div>
       <span class="fill-in__timer"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
@@ -42,7 +42,7 @@
               @if (word.userAnswer) {
                 <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
               }
-              <small>{{ word.exampleEn }}</small>
+              <small>{{ word.exampleTarget ?? word.exampleEn }}</small>
             </article>
           }
         </section>
@@ -68,7 +68,7 @@
       </div>
 
       <article class="fill-in__question">
-        <span class="fill-in__question-label">CÂU TIẾNG ANH</span>
+        <span class="fill-in__question-label">{{ session()?.language === 'zh' ? 'CÂU TIẾNG TRUNG' : 'CÂU TIẾNG ANH' }}</span>
         <p>{{ questionText() }}</p>
         <span class="fill-in__meaning">{{ word.meaningVi }}</span>
       </article>
@@ -94,7 +94,7 @@
           [disabled]="checked() !== null || saving() || pendingAnswer() !== null"
           (input)="setAnswer($event)"
           (keydown.enter)="checkAnswer()"
-          placeholder="Nhập từ tiếng Anh..."
+          [placeholder]="session()?.language === 'zh' ? 'Nhập từ tiếng Trung...' : 'Nhập từ tiếng Anh...'"
         />
       } @else {
         <fieldset class="fill-in__choices" [disabled]="checked() !== null || saving() || pendingAnswer() !== null">

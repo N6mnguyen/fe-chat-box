@@ -1,9 +1,14 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Inject, Input, Output, signal } from '@angular/core';
 
+import { VocabApiService } from './vocab-api.service';
 import { IconComponent } from '../shared/icon.component';
 import { StudyResultPayload, StudyResultWrongWord } from '../chat/chat.models';
+import { findVocabSpeechVoice, playVocabAudioBlob } from './vocab-study.utils';
 
-export type StudyResultAction = 'review' | 'stats' | 'study';
+export interface StudyResultAction {
+  action: 'review' | 'stats' | 'study';
+  language: 'en' | 'zh';
+}
 
 @Component({
   selector: 'app-study-result-card',
@@ -19,6 +24,8 @@ export class StudyResultCardComponent {
 
   readonly showAllWrong = signal(false);
   readonly audioError = signal('');
+
+  constructor(@Inject(VocabApiService) private readonly api: VocabApiService) {}
 
   get modeLabel(): string {
     switch (this.result.mode) {
@@ -45,17 +52,30 @@ export class StudyResultCardComponent {
         await new Audio(word.audioUrl).play();
         return;
       } catch {
-        this.audioError.set('Không phát được âm thanh. Thử lại bằng nút nghe.');
-        return;
+        // Fall through to speech synthesis when the audio file cannot be played.
       }
     }
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       this.audioError.set('Trình duyệt này chưa hỗ trợ phát âm.');
       return;
     }
+    const language = this.result.language === 'zh' ? 'zh' : 'en';
+    if (language === 'zh') {
+      try {
+        await playVocabAudioBlob(await this.api.pronunciation(word.word));
+        return;
+      } catch {
+        this.audioError.set('Chưa phát được âm thanh. Bấm nghe lại hoặc kiểm tra kết nối mạng.');
+        return;
+      }
+    }
+    const voice = await findVocabSpeechVoice(language);
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(word.word);
     utterance.lang = 'en-US';
+    if (voice) {
+      utterance.voice = voice;
+    }
     utterance.onerror = () => this.audioError.set('Không phát được âm thanh. Hãy thử lại.');
     window.speechSynthesis.speak(utterance);
   }

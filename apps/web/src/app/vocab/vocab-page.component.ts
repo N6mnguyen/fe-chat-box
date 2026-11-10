@@ -1,11 +1,18 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { IconComponent, IconName } from '../shared/icon.component';
-import { VocabApiService, VocabOverview, VocabTopic } from './vocab-api.service';
+import {
+  VocabApiService,
+  VocabGrammarCourse,
+  VocabLanguage,
+  VocabOverview,
+  VocabTopic,
+} from './vocab-api.service';
 
 type TopicFilter = 'all' | 'new' | 'learning' | 'mastered';
 type StudyMode = 'flashcard' | 'fill_blank' | 'listen_fill';
+const VOCAB_LANGUAGE_STORAGE_KEY = 'nchat.vocab.language';
 
 @Component({
   selector: 'app-vocab-page',
@@ -19,6 +26,8 @@ export class VocabPageComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal('');
   readonly overview = signal<VocabOverview | null>(null);
+  readonly grammarCourses = signal<VocabGrammarCourse[]>([]);
+  readonly language = signal<VocabLanguage>('en');
   readonly search = signal('');
   readonly filter = signal<TopicFilter>('all');
   readonly selectedTopicId = signal<string | null>(null);
@@ -27,6 +36,18 @@ export class VocabPageComponent implements OnInit {
   readonly startNotice = signal('');
 
   readonly topics = computed(() => this.overview()?.topics ?? []);
+  readonly topicGroups = computed(() => {
+    const groups = new Map<string, { slug: string; name: string; order: number; topics: VocabTopic[] }>();
+    for (const topic of this.filteredTopics()) {
+      let group = groups.get(topic.groupSlug);
+      if (!group) {
+        group = { slug: topic.groupSlug, name: topic.groupName, order: topic.groupOrder, topics: [] };
+        groups.set(topic.groupSlug, group);
+      }
+      group.topics.push(topic);
+    }
+    return [...groups.values()].sort((left, right) => left.order - right.order);
+  });
   readonly selectedTopic = computed(() => this.topics().find((topic) => topic.id === this.selectedTopicId()) ?? null);
   readonly continueTopic = computed(() =>
     this.topics().find((topic) => topic.id === this.overview()?.summary.continueTopicId) ?? null,
@@ -54,9 +75,32 @@ export class VocabPageComponent implements OnInit {
   constructor(
     private readonly api: VocabApiService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
+    const queryLanguage = this.route.snapshot.queryParamMap.get('language');
+    let storedLanguage: string | null = null;
+    try {
+      storedLanguage = typeof window === 'undefined' ? null : window.localStorage.getItem(VOCAB_LANGUAGE_STORAGE_KEY);
+    } catch (error) {
+      console.warn('Không thể đọc ngôn ngữ học đã lưu', error);
+    }
+    const language: VocabLanguage = queryLanguage === 'zh'
+      ? 'zh'
+      : queryLanguage === 'en'
+        ? 'en'
+        : storedLanguage === 'zh' ? 'zh' : 'en';
+    this.language.set(language);
+    this.persistLanguage(language);
+    if (!queryLanguage && storedLanguage === 'zh') {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { language },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
     void this.load();
   }
 
@@ -64,13 +108,44 @@ export class VocabPageComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     try {
-      this.overview.set(await this.api.overview());
+      const language = this.language();
+      const [overview, grammar] = await Promise.all([
+        this.api.overview(language),
+        language === 'zh' ? this.api.grammar('zh') : Promise.resolve({ courses: [] }),
+      ]);
+      this.overview.set(overview);
+      this.grammarCourses.set(grammar.courses);
+      if (this.route.snapshot.queryParamMap.get('review') === 'wrong') {
+        const topicId = this.route.snapshot.queryParamMap.get('topicId');
+        const topic = overview.topics.find((item) => item.id === topicId);
+        if (topic) {
+          this.selectedTopicId.set(topic.id);
+          this.startNotice.set('Bài học sẽ ưu tiên các từ bạn vừa trả lời sai.');
+        }
+      }
     } catch (error) {
       console.error('Không tải được danh sách khóa học từ vựng', error);
       this.error.set(error instanceof Error ? error.message : 'Không tải được dữ liệu. Vui lòng thử lại.');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  selectLanguage(language: VocabLanguage): void {
+    if (this.language() === language) {
+      return;
+    }
+    this.language.set(language);
+    this.persistLanguage(language);
+    this.selectedTopicId.set(null);
+    this.search.set('');
+    this.filter.set('all');
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { language },
+      queryParamsHandling: 'merge',
+    });
+    void this.load();
   }
 
   setSearch(event: Event): void {
@@ -113,11 +188,21 @@ export class VocabPageComponent implements OnInit {
         ? '/vocab/fill-in'
         : '/vocab/listen-fill';
     await this.router.navigate([studyRoute], {
-      queryParams: { topicId: topic.id, wordCount: this.wordCount(), mode: this.mode() },
+      queryParams: { topicId: topic.id, wordCount: this.wordCount(), mode: this.mode(), language: this.language() },
     });
   }
 
   exitToChat(): void {
     void this.router.navigateByUrl('/');
+  }
+
+  private persistLanguage(language: VocabLanguage): void {
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(VOCAB_LANGUAGE_STORAGE_KEY, language);
+      }
+    } catch (error) {
+      console.warn('Không thể lưu ngôn ngữ học đã chọn', error);
+    }
   }
 }

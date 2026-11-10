@@ -252,6 +252,49 @@
         </div>
       </div>
     }
+    @if (statsLoading || statsError || statsDashboard) {
+      <div class="row">
+        <span class="row__avatar">
+          <app-avatar [name]="conversation.name" [seed]="conversation.id" imageUrl="/assets/nquizlet.svg" />
+        </span>
+        <div class="row__content">
+          @if (statsLoading) {
+            <div class="bubble" role="status">NQuizlet đang tổng hợp thống kê của bạn...</div>
+          } @else if (statsError) {
+            <div class="bubble stats-error" role="alert">
+              <p>{{ statsError }}</p>
+              @if (selectedStatsDays) {
+                <button type="button" (click)="statsRetry.emit()">Thử tải lại</button>
+              }
+            </div>
+          } @else if (statsDashboard) {
+            <app-nquizlet-stats-dashboard [stats]="statsDashboard" (studyRequested)="studyRequested.emit()" />
+          }
+        </div>
+      </div>
+    }
+    @if (wrongReviewLoading || wrongReviewError || wrongReview) {
+      <div class="row">
+        <span class="row__avatar">
+          <app-avatar [name]="conversation.name" [seed]="conversation.id" imageUrl="/assets/nquizlet.svg" />
+        </span>
+        <div class="row__content">
+          @if (wrongReviewLoading) {
+            <div class="bubble" role="status">NQuizlet đang tìm những từ bạn trả lời sai hôm nay...</div>
+          } @else if (wrongReviewError) {
+            <div class="bubble stats-error" role="alert">
+              <p>{{ wrongReviewError }}</p>
+              <button type="button" (click)="wrongReviewRetry.emit()">Thử tải lại</button>
+            </div>
+          } @else if (wrongReview) {
+            <app-nquizlet-wrong-review
+              [review]="wrongReview"
+              (continueRequested)="wrongReviewContinue.emit($event)"
+            />
+          }
+        </div>
+      </div>
+    }
   </div>
 
   @if (showJump()) {

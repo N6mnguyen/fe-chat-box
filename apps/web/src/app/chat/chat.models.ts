@@ -43,12 +43,14 @@ export interface StudyResultWrongWord {
   correctAnswer: string;
   userAnswer: string;
   exampleEn: string;
+  exampleTarget?: string;
   audioUrl: string | null;
 }
 
 export interface StudyResultPayload {
   sessionId: string;
   topic: string;
+  language?: 'en' | 'zh';
   mode: 'flashcard' | 'fill_blank' | 'listen_fill';
   wordCount: number;
   score: number;

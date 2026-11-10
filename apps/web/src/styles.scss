@@ -90,6 +90,64 @@
   @include dark-tokens;
 }
 
+.vocab .language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 22px;
+}
+
+.vocab .language-switch button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-link);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.vocab .language-switch button:hover:not(.language-switch__selected) {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border));
+  transform: translateY(-1px);
+  color: var(--color-text);
+}
+
+.vocab .language-switch button.language-switch__selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.vocab .language-switch button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+  .vocab .language-switch {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .vocab .language-switch {
+    display: flex;
+  }
+
+  .vocab .language-switch button {
+    flex: 1;
+    padding-inline: 8px;
+    white-space: normal;
+  }
+}
+
 // Theo hệ thống: chỉ áp dụng khi người dùng không chọn sáng/tối rõ ràng.
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']):not([data-theme='dark']) {
