@@ -172,8 +172,38 @@ export class VocabPageComponent implements OnInit {
   continueLearning(): void {
     const topic = this.continueTopic();
     if (topic) {
+      const lesson = this.overview()?.summary.continueLesson;
+      if (lesson?.topicId === topic.id) {
+        const studyRoute = lesson.mode === 'flashcard'
+          ? '/vocab/study'
+          : lesson.mode === 'fill_blank'
+            ? '/vocab/fill-in'
+            : '/vocab/listen-fill';
+        void this.router.navigate([studyRoute], {
+          queryParams: {
+            topicId: topic.id,
+            wordCount: lesson.wordCount,
+            mode: lesson.mode,
+            language: this.language(),
+          },
+        });
+        return;
+      }
       this.chooseTopic(topic);
     }
+  }
+
+  continueLessonDescription(topic: VocabTopic): string {
+    const lesson = this.overview()?.summary.continueLesson;
+    if (!lesson || lesson.topicId !== topic.id) {
+      return `${topic.learningCount} từ đang học`;
+    }
+    const mode = lesson.mode === 'flashcard'
+      ? 'Flashcard'
+      : lesson.mode === 'fill_blank'
+        ? 'Điền từ'
+        : 'Nghe và điền từ';
+    return `${lesson.wordCount} từ · ${mode}`;
   }
 
   async startStudy(): Promise<void> {

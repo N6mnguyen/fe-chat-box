@@ -29,6 +29,11 @@ export interface VocabOverview {
     streak: number;
     dueToday: number;
     continueTopicId: string | null;
+    continueLesson: {
+      topicId: string;
+      mode: 'flashcard' | 'fill_blank' | 'listen_fill';
+      wordCount: 10 | 15 | 30;
+    } | null;
   };
 }
 

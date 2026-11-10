@@ -47,6 +47,10 @@ export class FlashcardStudyComponent implements OnInit, OnDestroy {
     const total = this.session()?.wordCount ?? 0;
     return total ? Math.round((this.firstPassAnswered() / total) * 100) : 0;
   });
+  readonly firstPassScorePercent = computed(() => {
+    const answered = this.firstPassAnswered();
+    return answered ? Math.round((this.firstPassCorrect() / answered) * 100) : 0;
+  });
   readonly resultPercent = computed(() => {
     const result = this.result();
     return result?.total ? Math.round((result.score / result.total) * 100) : 0;

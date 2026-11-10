@@ -41,10 +41,6 @@
     text-align: left;
     transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease;
 
-    &:hover:not(:disabled) {
-      box-shadow: 0 0 0 3px color-mix(in srgb, currentcolor 12%, transparent);
-    }
-
     &:focus-visible {
       outline: 3px solid currentcolor;
       outline-offset: 3px;
@@ -52,23 +48,13 @@
   }
   &__button--unknown {
     border-color: color-mix(in srgb, var(--color-danger) 48%, var(--color-border));
-    background: color-mix(in srgb, var(--color-danger) 8%, var(--color-raised));
+    background: var(--color-raised);
     color: var(--color-danger);
-
-    &:hover:not(:disabled) {
-      border-color: var(--color-danger);
-      background: color-mix(in srgb, var(--color-danger) 13%, var(--color-raised));
-    }
   }
   &__button--known {
     border-color: color-mix(in srgb, var(--color-success) 48%, var(--color-border));
-    background: color-mix(in srgb, var(--color-success) 8%, var(--color-raised));
+    background: var(--color-raised);
     color: var(--color-success);
-
-    &:hover:not(:disabled) {
-      border-color: var(--color-success);
-      background: color-mix(in srgb, var(--color-success) 13%, var(--color-raised));
-    }
   }
   &__answer-icon {
     display: grid;
@@ -106,6 +92,20 @@
   &__wrong-word div { display: flex; align-items: baseline; gap: 9px; }
   &__wrong-word div span, &__wrong-word p { color: var(--color-text-muted); font-size: 13px; }
   &__wrong-word p { margin: 0; }
+}
+
+@media (hover: hover) {
+  .study__button--unknown:hover:not(:disabled) {
+    border-color: var(--color-danger);
+    background: color-mix(in srgb, var(--color-danger) 13%, var(--color-raised));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 12%, transparent);
+  }
+
+  .study__button--known:hover:not(:disabled) {
+    border-color: var(--color-success);
+    background: color-mix(in srgb, var(--color-success) 13%, var(--color-raised));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 12%, transparent);
+  }
 }
 
 .flashcard {

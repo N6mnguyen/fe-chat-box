@@ -65,7 +65,7 @@
           <p class="study__eyebrow">HỌC TỪ VỰNG</p>
           <h1 id="study-title">Bạn nhớ từ này chứ?</h1>
         </div>
-        <span class="study__count">{{ firstPassAnswered() }}/{{ session()?.wordCount }} từ</span>
+        <span class="study__count">{{ firstPassAnswered() }}/{{ session()?.wordCount }} từ · {{ progressPercent() }}% hoàn thành</span>
       </div>
 
       <div class="study__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
@@ -154,7 +154,7 @@
         <button type="button" [disabled]="saving()" [class.study__tool--active]="autoSpeak()" [attr.aria-pressed]="autoSpeak()" (click)="autoSpeak.update((value) => !value)">
           <app-icon name="headphones" /> Tự phát âm {{ autoSpeak() ? 'đang bật' : 'đang tắt' }}
         </button>
-        <span>Điểm lượt đầu: {{ firstPassCorrect() }}/{{ session()?.wordCount }}</span>
+        <span>Đúng lượt đầu: {{ firstPassCorrect() }}/{{ firstPassAnswered() }} · {{ firstPassScorePercent() }}%</span>
       </footer>
     </section>
   }

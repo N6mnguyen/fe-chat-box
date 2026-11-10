@@ -107,7 +107,7 @@
         @if (continueTopic(); as topic) {
           <button class="summary__continue" type="button" (click)="continueLearning()">
             <app-icon class="summary__icon" name="play" />
-            <span><strong>Tiếp tục học</strong><span>{{ topic.name }} · {{ topic.learningCount }} từ đang học</span></span>
+            <span><strong>Tiếp tục học</strong><span>{{ topic.name }} · {{ continueLessonDescription(topic) }}</span></span>
             <app-icon name="arrow-right" />
           </button>
         }
