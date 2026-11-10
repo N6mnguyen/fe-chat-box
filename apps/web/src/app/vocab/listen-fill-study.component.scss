@@ -62,19 +62,20 @@
 }
 
 @media (max-width: 600px) {
-  .listen__topbar { min-height: 58px; gap: 8px; padding: 0 14px; }
-  .listen__brand { flex: none; font-size: 13px; }
-  .listen__session-name { flex: 1; min-width: 0; justify-content: center; gap: 5px; max-width: 42vw; overflow: hidden; white-space: nowrap; font-size: 11px; }
-  .listen__session-name span:first-child { overflow: hidden; text-overflow: ellipsis; }
-  .listen__timer { flex: none; font-size: 12px; }
-  .listen__content, .listen__result { width: calc(100% - 28px); margin-top: 22px; }
+  .listen__topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand timer" "session session"; gap: 5px 12px; min-height: 0; padding: 10px 14px; }
+  .listen__brand { grid-area: brand; min-width: 0; font-size: 13px; }
+  .listen__session-name { grid-area: session; justify-content: flex-start; gap: 6px; min-width: 0; max-width: none; overflow: hidden; white-space: nowrap; font-size: 12px; }
+  .listen__session-name span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .listen__timer { grid-area: timer; font-size: 12px; }
+  .listen__content, .listen__result { width: calc(100% - 28px); margin-top: 18px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .listen__heading { align-items: flex-start; }
   .listen__heading h1 { font-size: 23px; }
   .listen__heading > span { font-size: 12px; }
   .listen__audio-controls { align-items: stretch; }
   .listen__play, .listen__slow { flex: 1; padding: 0 9px; font-size: 13px; }
   .listen__prompt { min-height: 170px; padding: 20px 15px; border-radius: 18px; }
-  .listen__choices { grid-template-columns: 1fr; }
+  .listen__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .listen__choices button { min-height: 54px; padding: 7px; overflow-wrap: anywhere; }
   .listen__actions { gap: 8px; }
   .listen__primary, .listen__secondary { min-height: 46px; padding: 0 12px; }
   .listen__result-icon { width: 62px; height: 62px; margin-bottom: 12px; font-size: 30px; }
@@ -83,9 +84,9 @@
 }
 
 @media (max-width: 380px) {
-  .listen__topbar { gap: 6px; padding: 0 10px; }
+  .listen__topbar { gap: 4px 8px; padding-right: 10px; padding-left: 10px; }
   .listen__brand { gap: 4px; font-size: 12px; }
-  .listen__session-name { max-width: 36vw; font-size: 10px; }
+  .listen__session-name { font-size: 11px; }
   .listen__timer { gap: 3px; font-size: 11px; }
   .listen__actions { flex-direction: column-reverse; }
   .listen__actions > button { width: 100%; }

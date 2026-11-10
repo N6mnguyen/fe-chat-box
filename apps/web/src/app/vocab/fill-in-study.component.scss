@@ -56,17 +56,18 @@
 }
 
 @media (max-width: 600px) {
-  .fill-in__topbar { min-height: 58px; gap: 8px; padding: 0 14px; }
-  .fill-in__brand { flex: none; font-size: 13px; }
-  .fill-in__session-name { flex: 1; min-width: 0; justify-content: center; gap: 5px; max-width: 42vw; overflow: hidden; white-space: nowrap; font-size: 11px; }
-  .fill-in__session-name span:first-child { overflow: hidden; text-overflow: ellipsis; }
-  .fill-in__timer { flex: none; font-size: 12px; }
-  .fill-in__content, .fill-in__result { width: calc(100% - 28px); margin-top: 22px; }
+  .fill-in__topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "brand timer" "session session"; gap: 5px 12px; min-height: 0; padding: 10px 14px; }
+  .fill-in__brand { grid-area: brand; min-width: 0; font-size: 13px; }
+  .fill-in__session-name { grid-area: session; justify-content: flex-start; gap: 6px; min-width: 0; max-width: none; overflow: hidden; white-space: nowrap; font-size: 12px; }
+  .fill-in__session-name span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .fill-in__timer { grid-area: timer; font-size: 12px; }
+  .fill-in__content, .fill-in__result { width: calc(100% - 28px); margin-top: 18px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .fill-in__heading { align-items: flex-start; }
   .fill-in__heading h1 { font-size: 23px; }
   .fill-in__heading > span { font-size: 12px; }
   .fill-in__hint { align-items: flex-start; flex-direction: column; }
-  .fill-in__choices { grid-template-columns: 1fr; }
+  .fill-in__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .fill-in__choices button { min-height: 52px; padding: 7px; overflow-wrap: anywhere; }
   .fill-in__question { padding: 20px 16px; border-radius: 18px; }
   .fill-in__question p { font-size: 19px; }
   .fill-in__actions { gap: 8px; }
@@ -77,9 +78,9 @@
 }
 
 @media (max-width: 380px) {
-  .fill-in__topbar { gap: 6px; padding: 0 10px; }
+  .fill-in__topbar { gap: 4px 8px; padding-right: 10px; padding-left: 10px; }
   .fill-in__brand { gap: 4px; font-size: 12px; }
-  .fill-in__session-name { max-width: 36vw; font-size: 10px; }
+  .fill-in__session-name { font-size: 11px; }
   .fill-in__timer { gap: 3px; font-size: 11px; }
   .fill-in__actions { flex-direction: column-reverse; }
   .fill-in__actions > button { width: 100%; }
