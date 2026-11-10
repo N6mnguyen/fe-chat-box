@@ -1,0 +1,143 @@
+<main class="fill-in">
+  <header class="fill-in__topbar">
+    <a class="fill-in__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    @if (session(); as activeSession) {
+      <div class="fill-in__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Điền từ</span></div>
+      <span class="fill-in__timer"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="fill-in__state" role="status">Đang chuẩn bị bài tập...</div>
+  } @else if (error() && !session()) {
+    <div class="fill-in__state fill-in__state--error" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="fill-in__primary" (click)="loadSession()">Thử lại</button>
+      <button type="button" class="fill-in__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (result(); as completed) {
+    <section class="fill-in__result" aria-labelledby="fill-result-title">
+      <div class="fill-in__result-icon" aria-hidden="true">{{ resultPercent() >= 80 ? '🎉' : '💪' }}</div>
+      <p class="fill-in__eyebrow">HOÀN THÀNH BÀI HỌC</p>
+      <h1 id="fill-result-title">{{ resultPercent() >= 80 ? 'Làm tốt lắm!' : 'Cố gắng thêm nhé!' }}</h1>
+      <p class="fill-in__score"><strong>{{ completed.score }}/{{ completed.total }}</strong><span> · {{ resultPercent() }}%</span></p>
+      <p class="fill-in__muted">Thời gian học {{ elapsedLabel() }}</p>
+      @if (botSent()) {
+        <p role="status">NQuizlet đã nhận kết quả và nhắn bạn trong NChat. 🐵</p>
+      } @else if (botSending()) {
+        <p role="status">Đang gửi kết quả cho NQuizlet...</p>
+      } @else if (botError()) {
+        <div role="alert">
+          <p>Chưa gửi được kết quả cho NQuizlet: {{ botError() }}</p>
+          <button type="button" class="fill-in__primary" (click)="retryBotResult()">Thử gửi lại</button>
+        </div>
+      }
+      @if (completed.wrongWords.length) {
+        <section class="fill-in__wrong" aria-labelledby="fill-wrong-title">
+          <h2 id="fill-wrong-title">Từ cần ôn lại <span>({{ completed.wrongWords.length }})</span></h2>
+          @for (word of completed.wrongWords; track word.id) {
+            <article>
+              <strong>{{ word.word }}</strong><span>{{ word.meaningVi }}</span>
+              <p>Đáp án đúng: {{ word.word }}</p>
+              @if (word.userAnswer) {
+                <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
+              }
+              <small>{{ word.exampleEn }}</small>
+            </article>
+          }
+        </section>
+      } @else {
+        <p class="fill-in__muted">Tuyệt vời! Bạn trả lời đúng tất cả ngay lượt đầu tiên. ✨</p>
+      }
+      <button type="button" class="fill-in__primary" (click)="returnToCourses()">Về danh sách chủ đề</button>
+    </section>
+  } @else if (completionPending()) {
+    <div class="fill-in__state fill-in__state--error" role="alert">
+      <p>{{ error() || 'Chưa thể lưu kết quả bài học.' }}</p>
+      <button type="button" class="fill-in__primary" [disabled]="finishing()" (click)="next()">Thử lưu kết quả lại</button>
+      <button type="button" class="fill-in__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (currentWord(); as word) {
+    <section class="fill-in__content" aria-labelledby="fill-title">
+      <div class="fill-in__heading">
+        <div><p class="fill-in__eyebrow">ĐIỀN TỪ VÀO CHỖ TRỐNG</p><h1 id="fill-title">Chọn từ phù hợp với câu</h1></div>
+        <span>{{ currentIndex() + 1 }}/{{ words().length }}</span>
+      </div>
+      <div class="fill-in__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <span [style.width.%]="progressPercent()"></span>
+      </div>
+
+      <article class="fill-in__question">
+        <span class="fill-in__question-label">CÂU TIẾNG ANH</span>
+        <p>{{ questionText() }}</p>
+        <span class="fill-in__meaning">{{ word.meaningVi }}</span>
+      </article>
+
+      <div class="fill-in__hint">
+        <span>Gợi ý: {{ hintText() }}</span>
+        <button type="button" [disabled]="checked() !== null || saving() || hintCount() >= maxHints(word)" (click)="revealHint()">
+          <app-icon name="lightbulb" /> Gợi ý (-0,1 điểm mỗi chữ)
+        </button>
+      </div>
+
+      @if (!multipleChoice()) {
+        <label class="fill-in__answer-label" for="vocab-answer">Đáp án của bạn</label>
+        <input
+          id="vocab-answer"
+          class="fill-in__input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          maxlength="120"
+          [value]="answerText()"
+          [disabled]="checked() !== null || saving() || pendingAnswer() !== null"
+          (input)="setAnswer($event)"
+          (keydown.enter)="checkAnswer()"
+          placeholder="Nhập từ tiếng Anh..."
+        />
+      } @else {
+        <fieldset class="fill-in__choices" [disabled]="checked() !== null || saving() || pendingAnswer() !== null">
+          <legend>Chọn một đáp án</legend>
+          @for (option of options(); track option) {
+            <button type="button" [class.fill-in__choice--selected]="answerText() === option" (click)="selectOption(option)">{{ option }}</button>
+          }
+        </fieldset>
+      }
+
+      @if (checked() !== null) {
+        <div class="fill-in__feedback" [class.fill-in__feedback--correct]="checked()" [class.fill-in__feedback--wrong]="!checked()" role="status">
+          <strong>{{ checked() ? 'Chính xác! 🎉' : 'Chưa đúng, đáp án đúng là: ' + word.word }}</strong>
+          @if (!checked() && submittedAnswer()) {
+            <span>Bạn đã nhập: {{ submittedAnswer() }}</span>
+          }
+        </div>
+      }
+      @if (error()) {
+        <p class="fill-in__error" role="alert">{{ error() }}</p>
+      }
+      @if (saving()) {
+        <p class="fill-in__muted" role="status">Đang lưu tiến độ...</p>
+      }
+
+      <div class="fill-in__actions">
+        @if (checked() === null) {
+          <button type="button" class="fill-in__secondary" [disabled]="saving() || pendingAnswer() !== null" (click)="skip()">Bỏ qua</button>
+          @if (pendingAnswer()) {
+            <button type="button" class="fill-in__primary" [disabled]="saving()" (click)="retrySave()">Thử lưu lại</button>
+          } @else if (!multipleChoice()) {
+            <button type="button" class="fill-in__primary" [disabled]="saving() || !answerText().trim()" (click)="checkAnswer()">Kiểm tra</button>
+          } @else {
+            <button type="button" class="fill-in__primary" [disabled]="saving() || !answerText()" (click)="checkAnswer()">Kiểm tra</button>
+          }
+        } @else {
+          <button type="button" class="fill-in__primary" (click)="next()">Tiếp theo <app-icon name="arrow-right" /></button>
+        }
+      </div>
+
+      <button class="fill-in__mode-toggle" type="button" [disabled]="checked() !== null || saving()" [attr.aria-pressed]="multipleChoice()" (click)="multipleChoice.update((value) => !value)">
+        {{ multipleChoice() ? 'Tắt' : 'Bật' }} trắc nghiệm 4 đáp án
+      </button>
+    </section>
+  }
+</main>

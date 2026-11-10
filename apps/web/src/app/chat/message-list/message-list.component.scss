@@ -308,6 +308,10 @@
     min-width: 0;
   }
 
+  &__content--study {
+    max-width: min(90%, 560px);
+  }
+
   &--mine &__content {
     align-items: flex-end;
   }
@@ -333,6 +337,13 @@
     padding: 0;
     overflow: hidden;
     border: 0;
+  }
+
+  &--study-result {
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
   }
 
   // Bo góc theo vị trí trong cụm: phía dính avatar/đuôi bo nhỏ.

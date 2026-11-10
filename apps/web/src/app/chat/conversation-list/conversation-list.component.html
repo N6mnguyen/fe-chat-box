@@ -217,12 +217,18 @@
                 <app-avatar
                   [name]="row.conversation.name"
                   [seed]="row.conversation.id"
+                  [imageUrl]="row.conversation.avatarUrl ?? null"
                   [online]="row.conversation.online"
                   [showPresence]="true"
                 />
                 <span class="item__body">
                   <span class="item__line">
-                    <span class="item__name" [class.item__name--bold]="row.conversation.unread > 0" [title]="row.title">{{ row.conversation.name }}</span>
+                    <span class="item__name" [class.item__name--bold]="row.conversation.unread > 0" [title]="row.title">
+                      <span>{{ row.conversation.name }}</span>
+                      @if (row.conversation.isBot) {
+                        <span class="item__bot-tag">Bot</span>
+                      }
+                    </span>
                     @let time = row.conversation.lastAt | relativeTime;
                     <time class="item__time">{{ time.key ? (time.key | transloco: time.params) : time.text }}</time>
                   </span>
@@ -241,6 +247,9 @@
                         }
                         @case ('file') {
                           {{ 'list.file' | transloco: { name: row.conversation.lastText } }}
+                        }
+                        @case ('study_result') {
+                          Kết quả học từ vựng
                         }
                         @default {
                           {{ row.conversation.lastText || ('list.noMessage' | transloco) }}

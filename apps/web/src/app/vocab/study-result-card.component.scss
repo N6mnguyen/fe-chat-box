@@ -1,0 +1,155 @@
+:host {
+  display: block;
+  width: min(100%, 520px);
+}
+
+.result-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  color: var(--color-text);
+  background: var(--color-surface, var(--color-bg));
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+  }
+
+  &__mascot {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    background: var(--color-primary-soft);
+    border-radius: 50%;
+  }
+
+  &__score {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+
+    strong {
+      white-space: nowrap;
+      font-size: 14px;
+    }
+  }
+
+  &__progress {
+    height: 9px;
+    overflow: hidden;
+    background: var(--color-bg-subtle);
+    border-radius: 999px;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: inherit;
+    }
+  }
+
+  &__duration,
+  &__perfect {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  &__wrong {
+    display: grid;
+    gap: 8px;
+
+    h4 {
+      margin: 0;
+      font-size: 14px;
+    }
+  }
+
+  &__word {
+    padding: 9px 10px;
+    background: var(--color-bg-subtle);
+    border-radius: 10px;
+    font-size: 13px;
+
+    p {
+      margin: 3px 0;
+    }
+
+    p span,
+    small {
+      color: var(--color-text-muted);
+    }
+
+    small {
+      display: block;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+  }
+
+  &__word-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  &__listen,
+  &__expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    color: var(--color-link);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--color-danger);
+    font-size: 12px;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+
+    button {
+      flex: 1 1 130px;
+      min-height: 36px;
+      padding: 6px 9px;
+      color: var(--color-link);
+      background: var(--color-primary-soft);
+      border: 0;
+      border-radius: 9px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  }
+}

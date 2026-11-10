@@ -26,12 +26,22 @@
           @if (!row.mine) {
             <span class="row__avatar">
               @if (row.showAvatar) {
-                <app-avatar [name]="row.message.senderName" [seed]="row.message.senderId" />
+                <app-avatar
+                  [name]="row.message.senderName"
+                  [seed]="row.message.senderId"
+                  [imageUrl]="row.message.senderIsBot ? '/assets/nquizlet.svg' : null"
+                />
               }
             </span>
           }
 
-          <div class="row__content" tabindex="-1" [cdkContextMenuTriggerFor]="actions" [cdkContextMenuTriggerData]="{ $implicit: row }">
+          <div
+            class="row__content"
+            [class.row__content--study]="row.message.type === 'study_result'"
+            tabindex="-1"
+            [cdkContextMenuTriggerFor]="actions"
+            [cdkContextMenuTriggerData]="{ $implicit: row }"
+          >
             <div class="react-pop">
               <button
                 type="button"
@@ -90,6 +100,7 @@
               class="bubble"
               [class.bubble--mine]="row.mine"
               [class.bubble--media]="row.message.type === 'image'"
+              [class.bubble--study-result]="row.message.type === 'study_result'"
               [attr.data-pos]="row.position"
             >
               @if (row.message.recalledAt) {
@@ -127,6 +138,13 @@
                         <app-icon name="download" />
                       </a>
                     </div>
+                  }
+                }
+                @case ('study_result') {
+                  @if (row.message.studyResult; as result) {
+                    <app-study-result-card [result]="result" (action)="studyAction.emit($event)" />
+                  } @else {
+                    <p class="text">{{ row.message.content }}</p>
                   }
                 }
                 @default {
@@ -228,7 +246,7 @@
 
     @if (typing) {
       <div class="row row--end">
-        <span class="row__avatar"><app-avatar [name]="conversation.name" [seed]="conversation.id" /></span>
+        <span class="row__avatar"><app-avatar [name]="conversation.name" [seed]="conversation.id" [imageUrl]="conversation.avatarUrl ?? null" /></span>
         <div class="bubble typing" role="status" [attr.aria-label]="'messages.typing' | transloco: { name: conversation.name }">
           <span></span><span></span><span></span>
         </div>

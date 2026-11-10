@@ -15,6 +15,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { Router } from '@angular/router';
 import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
 import { UiFeedbackService } from '../../shared/ui-feedback.service';
@@ -26,6 +27,8 @@ import { ChatHeaderComponent } from '../chat-header/chat-header.component';
 import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { MessageComposerComponent } from '../message-composer/message-composer.component';
 import { MessageListComponent } from '../message-list/message-list.component';
+import { NQuizletCommand, NQuizletQuickCommandsComponent } from './nquizlet-quick-commands.component';
+import { StudyResultAction } from '../../vocab/study-result-card.component';
 
 @Component({
   selector: 'app-chat-window',
@@ -34,6 +37,7 @@ import { MessageListComponent } from '../message-list/message-list.component';
     TranslocoPipe, NzModalModule, NzButtonModule, NzInputModule,
     AvatarComponent, IconComponent, ChatHeaderComponent, MessageListComponent,
     MessageComposerComponent, InfoPanelComponent,
+    NQuizletQuickCommandsComponent,
   ],
   templateUrl: './chat-window.component.html',
   styleUrl: './chat-window.component.scss',
@@ -65,6 +69,7 @@ export class ChatWindowComponent implements OnChanges {
     private readonly transloco: TranslocoService,
     private readonly feedback: UiFeedbackService,
     private readonly chat: ChatService,
+    private readonly router: Router,
   ) {
     this.targetConversations = chat.conversations;
   }
@@ -88,6 +93,26 @@ export class ChatWindowComponent implements OnChanges {
 
   toggleInfo(): void {
     this.infoOpen.update((open) => !open);
+  }
+
+  onNQuizletCommand(command: NQuizletCommand | StudyResultAction): void {
+    if (command === 'disable_reminders') {
+      this.feedback.info('Cài đặt nhắc học sẽ có ở giai đoạn tiếp theo.');
+      return;
+    }
+    if (command === 'weekly_stats' || command === 'stats') {
+      void this.router.navigate(['/vocab'], { queryParams: { tab: 'stats' } });
+      return;
+    }
+    if (command === 'review_wrong') {
+      void this.router.navigate(['/vocab'], { queryParams: { review: 'wrong' } });
+      return;
+    }
+    if (command === 'review') {
+      void this.router.navigate(['/vocab'], { queryParams: { review: 'wrong' } });
+      return;
+    }
+    void this.router.navigateByUrl('/vocab');
   }
 
   async onReact(event: { messageId: string; emoji: string }): Promise<void> {

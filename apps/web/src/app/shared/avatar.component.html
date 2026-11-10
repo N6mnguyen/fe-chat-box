@@ -1,4 +1,10 @@
-<span class="avatar hue-{{ hue }}" aria-hidden="true">{{ initial }}</span>
+<span class="avatar hue-{{ hue }}" aria-hidden="true">
+  @if (imageUrl) {
+    <img [src]="imageUrl" alt="" />
+  } @else {
+    {{ initial }}
+  }
+</span>
 @if (showPresence && online) {
   <span class="presence" aria-hidden="true"></span>
 }

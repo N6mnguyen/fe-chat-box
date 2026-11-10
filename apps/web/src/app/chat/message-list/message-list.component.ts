@@ -20,6 +20,7 @@ import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
 import { formatFileSize, normalizeText, splitLinks, TextPart } from '../../shared/text.util';
 import { UiFeedbackService } from '../../shared/ui-feedback.service';
+import { StudyResultAction, StudyResultCardComponent } from '../../vocab/study-result-card.component';
 import { canDeleteForAll, canEditMessage } from '../chat.service';
 import { Attachment, Conversation, Message } from '../chat.models';
 
@@ -70,6 +71,7 @@ const DEFAULT_RATIO = 4 / 3;
     TranslocoPipe,
     AvatarComponent,
     IconComponent,
+    StudyResultCardComponent,
     CdkContextMenuTrigger,
     CdkMenu,
     CdkMenuItem,
@@ -93,6 +95,7 @@ export class MessageListComponent implements OnChanges, AfterViewChecked {
   @Output() replyRequested = new EventEmitter<Message>();
   @Output() forwardRequested = new EventEmitter<Message>();
   @Output() reacted = new EventEmitter<{ messageId: string; emoji: string }>();
+  @Output() studyAction = new EventEmitter<StudyResultAction>();
 
   /** Bộ reaction nhanh, đặt ở hằng số để template không tự tạo mảng mỗi lần render. */
   readonly quickReactions = QUICK_REACTIONS;

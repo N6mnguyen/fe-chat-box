@@ -21,15 +21,20 @@
       (deleteForAllRequested)="onDeleteForAll($event)"
       (replyRequested)="onReply($event)"
       (forwardRequested)="onForward($event)"
+      (studyAction)="onNQuizletCommand($event)"
     />
-    <app-message-composer
-      [sending]="sending()"
-      [errorKey]="errorKey()"
-      [errorDetail]="errorDetail()"
-      [replyMessage]="replyMessage()"
-      (replyCancelled)="replyMessage.set(null)"
-      (messageSent)="onSend($event)"
-    />
+    @if (conversation.isBot) {
+      <app-nquizlet-quick-commands (commandSelected)="onNQuizletCommand($event)" />
+    } @else {
+      <app-message-composer
+        [sending]="sending()"
+        [errorKey]="errorKey()"
+        [errorDetail]="errorDetail()"
+        [replyMessage]="replyMessage()"
+        (replyCancelled)="replyMessage.set(null)"
+        (messageSent)="onSend($event)"
+      />
+    }
   </section>
 
   <nz-modal

@@ -1,0 +1,62 @@
+<article class="result-card" aria-label="Kết quả học từ vựng">
+  <header class="result-card__header">
+    <span class="result-card__mascot" aria-hidden="true">🐵</span>
+    <div>
+      <h3>Kết quả bài {{ result.topic }} – {{ modeLabel }} ({{ result.wordCount }} từ)</h3>
+      <p>{{ result.botText }}</p>
+    </div>
+  </header>
+
+  <div class="result-card__score">
+    <div
+      class="result-card__progress"
+      role="progressbar"
+      aria-label="Tỉ lệ trả lời đúng"
+      [attr.aria-valuenow]="result.percent"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <span [style.width.%]="result.percent"></span>
+    </div>
+    <strong>{{ result.score }}/{{ result.total }} ({{ result.percent }}%)</strong>
+  </div>
+  <p class="result-card__duration">Thời gian học: {{ durationLabel }} · Chuỗi học: {{ result.streak }} ngày</p>
+
+  @if (result.wrongWords.length) {
+    <section class="result-card__wrong" aria-labelledby="nquizlet-wrong-title">
+      <h4 id="nquizlet-wrong-title">Từ cần ôn lại ({{ result.wrongWords.length }})</h4>
+      @for (word of visibleWrongWords; track word.word) {
+        <article class="result-card__word">
+          <div class="result-card__word-heading">
+            <strong>{{ word.word }}</strong>
+            <button type="button" class="result-card__listen" aria-label="Nghe phát âm từ {{ word.word }}" (click)="speak(word)">
+              <app-icon name="headphones" /> Nghe
+            </button>
+          </div>
+          <p>{{ word.meaningVi }}</p>
+          <p><span>Đáp án đúng:</span> {{ word.correctAnswer }}</p>
+          @if (word.userAnswer) {
+            <p><span>Bạn đã nhập:</span> {{ word.userAnswer }}</p>
+          }
+          <small>{{ word.exampleEn }}</small>
+        </article>
+      }
+      @if (audioError()) {
+        <p class="result-card__error" role="status">{{ audioError() }}</p>
+      }
+      @if (result.wrongWords.length > 5) {
+        <button type="button" class="result-card__expand" (click)="showAllWrong.update((value) => !value)">
+          {{ showAllWrong() ? 'Thu gọn' : 'Xem tất cả' }}
+        </button>
+      }
+    </section>
+  } @else {
+    <p class="result-card__perfect">Bạn đã làm đúng tất cả. Tuyệt vời! ✨</p>
+  }
+
+  <footer class="result-card__actions">
+    <button type="button" (click)="action.emit('review')">Ôn lại từ sai</button>
+    <button type="button" (click)="action.emit('stats')">Thống kê 7 ngày</button>
+    <button type="button" (click)="action.emit('study')">Học bộ khác</button>
+  </footer>
+</article>

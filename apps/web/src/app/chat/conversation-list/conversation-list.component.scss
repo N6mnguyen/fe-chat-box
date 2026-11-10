@@ -398,11 +398,30 @@
   }
 
   &__name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-weight: 500;
+
+    > span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     &--bold {
       font-weight: 700;
     }
+  }
+
+  &__bot-tag {
+    flex: none;
+    padding: 1px 5px;
+    color: var(--color-link);
+    background: var(--color-primary-soft);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
   }
 
   &__last {

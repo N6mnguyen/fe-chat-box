@@ -19,11 +19,12 @@
               <button
                 type="button"
                 class="item"
-                [class.item--active]="!item.soon"
+                [class.item--active]="!item.soon && isActive(item.key)"
                 [disabled]="item.soon"
-                [attr.aria-current]="item.soon ? null : 'page'"
+                [attr.aria-current]="!item.soon && isActive(item.key) ? 'page' : null"
                 [attr.aria-label]="'nav.' + item.key | transloco"
                 [title]="('nav.' + item.key | transloco) + (item.soon ? ' · ' + ('common.soon' | transloco) : '')"
+                (click)="navigate(item.key)"
               >
                 <app-icon [name]="item.icon" class="item__icon" />
                 <span class="item__label">{{ 'nav.' + item.key | transloco }}</span>

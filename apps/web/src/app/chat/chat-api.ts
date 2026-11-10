@@ -3,12 +3,13 @@ import type { RealtimeConfig } from './realtime-client';
 
 import { AuthStore } from '../auth/auth.store';
 import { API_BASE_URL } from '../api-base-url';
-import { Conversation, Reaction, ReplyRef } from './chat.models';
+import { Conversation, Reaction, ReplyRef, StudyResultPayload } from './chat.models';
 
 export interface ApiUser {
   id: string;
   username: string;
   displayName: string | null;
+  isBot?: boolean;
 }
 
 export interface ApiMessage {
@@ -16,6 +17,9 @@ export interface ApiMessage {
   conversationId: string;
   senderId: string;
   senderName: string;
+  senderIsBot?: boolean;
+  type?: 'text' | 'study_result';
+  structuredPayload?: StudyResultPayload | null;
   clientMsgId: string;
   createdSeq: string;
   latestSeq: string;
@@ -394,6 +398,8 @@ export class ChatApi implements ChatPort {
     return {
       id: api.id,
       name: peerName,
+      isBot: api.peer?.isBot ?? false,
+      avatarUrl: api.peer?.isBot ? '/assets/nquizlet.svg' : null,
       isGroup: false,
       memberCount: 2,
       memberNames: [peerName],
@@ -401,7 +407,11 @@ export class ChatApi implements ChatPort {
       unread: api.unreadCount,
       pinned: api.pinned,
       muted: api.muted,
-      lastKind: 'text',
+      lastKind: last?.type === 'study_result'
+        ? 'study_result'
+        : last?.attachments.length
+          ? last.attachments[0].mimeType.startsWith('image/') ? 'image' : 'file'
+          : 'text',
       lastText: last?.body ?? '',
       lastMine: last?.senderId === meId,
       lastSender: last?.senderName ?? peerName,

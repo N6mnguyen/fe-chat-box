@@ -16,6 +16,7 @@ import {
   LoadState,
   Message,
   ReplyRef,
+  StudyResultPayload,
 } from './chat.models';
 import { RealtimeClient } from './realtime-client';
 
@@ -55,6 +56,25 @@ export function canEditMessage(message: Message, meId: string): boolean {
     !message.recalledAt &&
     message.status !== 'queued' &&
     message.status !== 'sending';
+}
+
+function isStudyResultPayload(value: unknown): value is StudyResultPayload {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const result = value as Record<string, unknown>;
+  return typeof result['sessionId'] === 'string'
+    && typeof result['topic'] === 'string'
+    && (result['mode'] === 'flashcard' || result['mode'] === 'fill_blank' || result['mode'] === 'listen_fill')
+    && Number.isInteger(result['wordCount'])
+    && typeof result['score'] === 'number'
+    && typeof result['total'] === 'number'
+    && typeof result['percent'] === 'number'
+    && typeof result['durationSec'] === 'number'
+    && typeof result['streak'] === 'number'
+    && Array.isArray(result['wrongWords'])
+    && typeof result['botText'] === 'string'
+    && typeof result['fallbackText'] === 'string';
 }
 
 // Poll chỉ là dự phòng. Có realtime: 60s/lần (tự chữa nếu lỡ ping); không có: 5s/lần.
@@ -555,6 +575,7 @@ export class ChatService {
         }
       : undefined;
     const deletedAt = api.deleted ? Date.parse(api.updatedAt) : undefined;
+    const studyResult = isStudyResultPayload(api.structuredPayload) ? api.structuredPayload : undefined;
     return {
       id: api.id,
       clientMsgId: api.clientMsgId,
@@ -562,10 +583,14 @@ export class ChatService {
       seq: Number(api.createdSeq),
       senderId: api.senderId,
       senderName: api.senderName,
-      type: attachment
-        ? (attachment.mimeType?.startsWith('image/') ? 'image' : 'file')
-        : 'text',
-      content: api.body ?? '',
+      senderIsBot: api.senderIsBot,
+      type: studyResult
+        ? 'study_result'
+        : attachment
+          ? (attachment.mimeType?.startsWith('image/') ? 'image' : 'file')
+          : 'text',
+      content: api.body ?? studyResult?.fallbackText ?? '',
+      studyResult,
       status: api.status,
       attachment,
       replyTo: api.replyTo
@@ -619,7 +644,7 @@ export class ChatService {
       return;
     }
     this.patchConversation(conversationId, {
-      lastKind: 'text',
+      lastKind: last.type,
       lastText: last.recalledAt ? '' : last.content,
       lastMine: last.senderId === this.meId,
       lastSender: last.senderName,

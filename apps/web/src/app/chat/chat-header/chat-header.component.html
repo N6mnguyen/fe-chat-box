@@ -9,11 +9,19 @@
     <app-icon name="back" />
   </button>
 
-  <app-avatar [name]="conversation.name" [online]="conversation.online" [showPresence]="!conversation.isGroup" />
+  <app-avatar
+    [name]="conversation.name"
+    [imageUrl]="conversation.avatarUrl ?? null"
+    [online]="conversation.online"
+    [showPresence]="!conversation.isGroup && !conversation.isBot"
+  />
 
   <div class="head__text">
     <div class="head__title">
       <h2 class="head__name" [title]="conversation.name">{{ conversation.name }}</h2>
+      @if (conversation.isBot) {
+        <span class="head__tag">Bot</span>
+      }
       @if (conversation.tag) {
         <span class="head__tag" [title]="conversation.tag">{{ conversation.tag }}</span>
       }

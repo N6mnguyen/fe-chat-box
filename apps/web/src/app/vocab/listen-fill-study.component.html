@@ -1,0 +1,146 @@
+<main class="listen">
+  <header class="listen__topbar">
+    <a class="listen__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    @if (session(); as activeSession) {
+      <div class="listen__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Nghe và điền từ</span></div>
+      <span class="listen__timer"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="listen__state" role="status">Đang chuẩn bị bài nghe...</div>
+  } @else if (error() && !session()) {
+    <div class="listen__state listen__state--error" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="listen__primary" (click)="loadSession()">Thử lại</button>
+      <button type="button" class="listen__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (result(); as completed) {
+    <section class="listen__result" aria-labelledby="listen-result-title">
+      <div class="listen__result-icon" aria-hidden="true">{{ resultPercent() >= 80 ? '🎉' : '💪' }}</div>
+      <p class="listen__eyebrow">HOÀN THÀNH BÀI HỌC</p>
+      <h1 id="listen-result-title">{{ resultPercent() >= 80 ? 'Làm tốt lắm!' : 'Cố gắng thêm nhé!' }}</h1>
+      <p class="listen__score"><strong>{{ completed.score }}/{{ completed.total }}</strong><span> · {{ resultPercent() }}%</span></p>
+      <p class="listen__muted">Thời gian học {{ elapsedLabel() }}</p>
+      @if (botSent()) {
+        <p role="status">NQuizlet đã nhận kết quả và nhắn bạn trong NChat. 🐵</p>
+      } @else if (botSending()) {
+        <p role="status">Đang gửi kết quả cho NQuizlet...</p>
+      } @else if (botError()) {
+        <div role="alert">
+          <p>Chưa gửi được kết quả cho NQuizlet: {{ botError() }}</p>
+          <button type="button" class="listen__primary" (click)="retryBotResult()">Thử gửi lại</button>
+        </div>
+      }
+      @if (completed.wrongWords.length) {
+        <section class="listen__wrong" aria-labelledby="listen-wrong-title">
+          <h2 id="listen-wrong-title">Từ cần ôn lại <span>({{ completed.wrongWords.length }})</span></h2>
+          @for (word of completed.wrongWords; track word.id) {
+            <article>
+              <strong>{{ word.word }}</strong><span>{{ word.meaningVi }}</span>
+              <p>Đáp án đúng: {{ word.word }}</p>
+              @if (word.userAnswer) {
+                <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
+              }
+              <small>{{ word.exampleEn }}</small>
+            </article>
+          }
+        </section>
+      } @else {
+        <p class="listen__muted">Tuyệt vời! Bạn nghe đúng tất cả ngay lượt đầu tiên. ✨</p>
+      }
+      <button type="button" class="listen__primary" (click)="returnToCourses()">Về danh sách chủ đề</button>
+    </section>
+  } @else if (completionPending()) {
+    <div class="listen__state listen__state--error" role="alert">
+      <p>{{ error() || 'Chưa thể lưu kết quả bài học.' }}</p>
+      <button type="button" class="listen__primary" [disabled]="finishing()" (click)="next()">Thử lưu kết quả lại</button>
+      <button type="button" class="listen__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (currentWord(); as word) {
+    <section class="listen__content" aria-labelledby="listen-title">
+      <div class="listen__heading">
+        <div><p class="listen__eyebrow">NGHE VÀ ĐIỀN TỪ</p><h1 id="listen-title">Lắng nghe và nhập từ</h1></div>
+        <span>{{ currentIndex() + 1 }}/{{ words().length }}</span>
+      </div>
+      <div class="listen__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <span [style.width.%]="progressPercent()"></span>
+      </div>
+
+      <div class="listen__variant" role="group" aria-label="Nội dung muốn nghe">
+        <button type="button" [class.listen__variant--selected]="listenStyle() === 'word'" [attr.aria-pressed]="listenStyle() === 'word'" (click)="chooseListenStyle('word')">Nghe từ</button>
+        <button type="button" [class.listen__variant--selected]="listenStyle() === 'sentence'" [attr.aria-pressed]="listenStyle() === 'sentence'" (click)="chooseListenStyle('sentence')">Nghe cả câu</button>
+      </div>
+
+      <article class="listen__prompt" aria-live="polite">
+        <span class="listen__prompt-icon" aria-hidden="true"><app-icon name="headphones" /></span>
+        <p>{{ listenStyle() === 'word' ? 'Nghe từ tiếng Anh và nhập lại từ đó.' : 'Nghe câu ví dụ, rồi nhập từ còn thiếu.' }}</p>
+        <span class="listen__context">{{ contextText() }}</span>
+      </article>
+
+      <div class="listen__audio-controls" role="group" aria-label="Điều khiển âm thanh">
+        <button type="button" class="listen__play" [disabled]="playing() || (limitListens() && listenCount() >= 3)" (click)="playPrompt()">
+          <app-icon name="play" /> {{ playing() ? 'Đang phát...' : 'Nghe' }}
+        </button>
+        <button type="button" class="listen__slow" [disabled]="playing() || (limitListens() && listenCount() >= 3)" (click)="playPrompt(true)">
+          <app-icon name="headphones" /> Nghe chậm 0,75x
+        </button>
+        @if (limitListens()) {
+          <span class="listen__counter">{{ listenCount() }}/3 lượt</span>
+        }
+      </div>
+
+      @if (audioNotice()) {
+        <p class="listen__notice" role="status">{{ audioNotice() }}</p>
+      }
+      <p class="listen__length">Từ cần nhập gồm {{ word.word.length }} ký tự.</p>
+      <label class="listen__answer-label" for="listen-answer">Đáp án của bạn</label>
+      <input
+        id="listen-answer"
+        class="listen__input"
+        type="text"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        maxlength="120"
+        [value]="answerText()"
+        [disabled]="checked() !== null || saving() || pendingAnswer() !== null"
+        (input)="setAnswer($event)"
+        (keydown.enter)="checkAnswer()"
+        placeholder="Nhập từ tiếng Anh bạn nghe được..."
+      />
+
+      @if (checked() !== null) {
+        <div class="listen__feedback" [class.listen__feedback--correct]="checked()" [class.listen__feedback--wrong]="!checked()" role="status">
+          <strong>{{ checked() ? 'Chính xác! 🎉' : 'Chưa đúng, đáp án đúng là: ' + word.word }}</strong>
+          @if (!checked() && submittedAnswer()) {
+            <span>Bạn đã nhập: {{ submittedAnswer() }}</span>
+          }
+        </div>
+      }
+      @if (error()) {
+        <p class="listen__error" role="alert">{{ error() }}</p>
+      }
+      @if (saving()) {
+        <p class="listen__muted" role="status">Đang lưu tiến độ...</p>
+      }
+
+      <div class="listen__actions">
+        @if (checked() === null) {
+          <button type="button" class="listen__secondary" [disabled]="saving() || pendingAnswer() !== null" (click)="skip()">Bỏ qua</button>
+          @if (pendingAnswer()) {
+            <button type="button" class="listen__primary" [disabled]="saving()" (click)="retrySave()">Thử lưu lại</button>
+          } @else {
+            <button type="button" class="listen__primary" [disabled]="saving() || !answerText().trim()" (click)="checkAnswer()">Kiểm tra</button>
+          }
+        } @else {
+          <button type="button" class="listen__primary" (click)="next()">Tiếp theo <app-icon name="arrow-right" /></button>
+        }
+      </div>
+
+      <button class="listen__limit" type="button" [disabled]="checked() !== null || saving()" [attr.aria-pressed]="limitListens()" (click)="limitListens.update((value) => !value)">
+        {{ limitListens() ? 'Tắt giới hạn lượt nghe' : 'Giới hạn tối đa 3 lượt nghe' }}
+      </button>
+    </section>
+  }
+</main>

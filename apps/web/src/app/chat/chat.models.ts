@@ -1,6 +1,6 @@
 // Mô hình dữ liệu dùng chung cho tính năng chat (sẽ chuyển sang libs/shared/models khi có backend).
 
-export type MessageType = 'text' | 'image' | 'file';
+export type MessageType = 'text' | 'image' | 'file' | 'study_result';
 /** Máy trạng thái gửi: queued → sending → sent → delivered → seen; nhánh failed / cancelled. */
 export type MessageStatus =
   | 'queued'
@@ -37,6 +37,30 @@ export interface Reaction {
   mine?: boolean;
 }
 
+export interface StudyResultWrongWord {
+  word: string;
+  meaningVi: string;
+  correctAnswer: string;
+  userAnswer: string;
+  exampleEn: string;
+  audioUrl: string | null;
+}
+
+export interface StudyResultPayload {
+  sessionId: string;
+  topic: string;
+  mode: 'flashcard' | 'fill_blank' | 'listen_fill';
+  wordCount: number;
+  score: number;
+  total: number;
+  percent: number;
+  durationSec: number;
+  streak: number;
+  wrongWords: StudyResultWrongWord[];
+  botText: string;
+  fallbackText: string;
+}
+
 export interface Message {
   id: string;
   clientMsgId: string;
@@ -45,8 +69,10 @@ export interface Message {
   seq: number;
   senderId: string;
   senderName: string;
+  senderIsBot?: boolean;
   type: MessageType;
   content: string;
+  studyResult?: StudyResultPayload;
   status: MessageStatus;
   attachment?: Attachment;
   replyTo?: ReplyRef;
@@ -73,6 +99,8 @@ export interface Message {
 export interface Conversation {
   id: string;
   name: string;
+  isBot?: boolean;
+  avatarUrl?: string | null;
   /** Mô tả ngắn hiển thị cạnh tên (ví dụ tên dự án). */
   tag?: string;
   isGroup: boolean;

@@ -38,6 +38,13 @@ export type IconName =
   | 'reply'
   | 'forward'
   | 'trash'
+  | 'book'
+  | 'flame'
+  | 'lightbulb'
+  | 'headphones'
+  | 'cards'
+  | 'play'
+  | 'arrow-right'
   | 'logout';
 
 // Đường vẽ SVG (viewBox 24x24, nét 2px) để icon đồng nhất, không cần thư viện.
@@ -81,6 +88,13 @@ const PATHS: Record<IconName, string> = {
   reply: 'M9 8L4 12l5 4M4 12h10a6 6 0 0 1 6 6',
   forward: 'M15 8l5 4-5 4m5-4H10a6 6 0 0 0-6 6',
   logout: 'M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h10',
+  book: 'M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21zM4 5.5v13A2.5 2.5 0 0 1 6.5 16H20',
+  flame: 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z',
+  lightbulb: 'M9 18h6m-5 3h4m-3-6a6 6 0 1 1 2 0c-.7.7-1 1.4-1 3h-2c0-1.6-.3-2.3-1-3z',
+  headphones: 'M4 15v-3a8 8 0 0 1 16 0v3M4 15h3v5H5a1 1 0 0 1-1-1zM20 15h-3v5h2a1 1 0 0 0 1-1z',
+  cards: 'M4 8h12v11H4zM8 8V5h12v11h-4',
+  play: 'M7 5l12 7-12 7z',
+  'arrow-right': 'M5 12h14m-6-6l6 6-6 6',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
 };
 

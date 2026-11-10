@@ -1,0 +1,39 @@
+:host {
+  display: block;
+  flex: none;
+  padding: 10px 14px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-raised);
+}
+
+.quick-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 900px;
+  margin: 0 auto;
+
+  button {
+    min-height: 40px;
+    padding: 8px 12px;
+    color: var(--color-link);
+    background: var(--color-primary-soft);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 520px) {
+  .quick-commands {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

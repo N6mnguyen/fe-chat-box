@@ -1,0 +1,147 @@
+<main class="study">
+  <header class="study__topbar">
+    <a class="study__brand" routerLink="/vocab"><app-icon name="back" /> <span>NChat Vocab</span></a>
+    @if (session(); as activeSession) {
+      <div class="study__session-name"><span>{{ activeSession.topic }}</span><span>·</span><span>Flashcard</span></div>
+      <span class="study__timer" aria-label="Thời gian học"><app-icon name="clock" /> {{ elapsedLabel() }}</span>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="study__state" role="status">Đang chuẩn bị bộ flashcard...</div>
+  } @else if (error() && !session()) {
+    <div class="study__state study__state--error" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="study__button study__button--primary" (click)="loadSession()">Thử lại</button>
+      <button type="button" class="study__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (result(); as completed) {
+    <section class="study__result" aria-labelledby="result-title">
+      <div class="study__result-icon" aria-hidden="true">{{ resultPercent() >= 80 ? '🎉' : '💪' }}</div>
+      <p class="study__eyebrow">HOÀN THÀNH BÀI HỌC</p>
+      <h1 id="result-title">{{ resultPercent() >= 80 ? 'Làm tốt lắm!' : 'Cố gắng thêm nhé!' }}</h1>
+      <p class="study__score"><strong>{{ completed.score }}/{{ completed.total }}</strong><span> · {{ resultPercent() }}%</span></p>
+      <p class="study__result-time">Thời gian học {{ elapsedLabel() }}</p>
+      @if (botSent()) {
+        <p role="status">NQuizlet đã nhận kết quả và nhắn bạn trong NChat. 🐵</p>
+      } @else if (botSending()) {
+        <p role="status">Đang gửi kết quả cho NQuizlet...</p>
+      } @else if (botError()) {
+        <div role="alert">
+          <p>Chưa gửi được kết quả cho NQuizlet: {{ botError() }}</p>
+          <button type="button" class="study__button study__button--primary" (click)="retryBotResult()">Thử gửi lại</button>
+        </div>
+      }
+      @if (completed.wrongWords.length) {
+        <section class="study__wrong" aria-labelledby="wrong-title">
+          <h2 id="wrong-title">Từ cần ôn lại <span>({{ completed.wrongWords.length }})</span></h2>
+          @for (word of completed.wrongWords; track word.id) {
+            <article class="study__wrong-word">
+              <div><strong>{{ word.word }}</strong><span>{{ word.phonetic }}</span></div>
+              <p>{{ word.meaningVi }}</p>
+              <p>Đáp án đúng: {{ word.word }}</p>
+              @if (word.userAnswer) {
+                <p>Bạn đã trả lời: {{ word.userAnswer }}</p>
+              }
+              <small>{{ word.exampleEn }}</small>
+            </article>
+          }
+        </section>
+      } @else {
+        <p class="study__perfect">Bạn đã nhớ tất cả từ ngay lượt đầu tiên. Tuyệt vời! ✨</p>
+      }
+      <button type="button" class="study__button study__button--primary" (click)="returnToCourses()">Về danh sách chủ đề</button>
+    </section>
+  } @else if (completionPending()) {
+    <div class="study__state study__state--error" role="alert">
+      <p>{{ error() || 'Chưa thể lưu kết quả bài học.' }}</p>
+      <button type="button" class="study__button study__button--primary" [disabled]="finishing()" (click)="retryFinish()">Thử lưu kết quả lại</button>
+      <button type="button" class="study__text-button" (click)="returnToCourses()">Về chủ đề</button>
+    </div>
+  } @else if (currentCard(); as card) {
+    <section class="study__content" aria-labelledby="study-title">
+      <div class="study__heading">
+        <div>
+          <p class="study__eyebrow">HỌC TỪ VỰNG</p>
+          <h1 id="study-title">Bạn nhớ từ này chứ?</h1>
+        </div>
+        <span class="study__count">{{ firstPassAnswered() }}/{{ session()?.wordCount }} từ</span>
+      </div>
+
+      <div class="study__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <span [style.width.%]="progressPercent()"></span>
+      </div>
+
+      <div
+        class="flashcard"
+        [class.flashcard--flipped]="flipped()"
+        [class.flashcard--busy]="saving()"
+        tabindex="0"
+        role="group"
+        [attr.aria-label]="flipped() ? 'Mặt sau của thẻ từ ' + card.word.word : 'Mặt trước của thẻ từ ' + card.word.word"
+        (click)="flip()"
+        (keydown)="onCardKeydown($event)"
+        (touchstart)="onTouchStart($event)"
+        (touchend)="onTouchEnd($event)"
+      >
+        <div class="flashcard__inner">
+          <article class="flashcard__face flashcard__face--front" [attr.aria-hidden]="flipped()">
+            <span class="flashcard__hint">TỪ VỰNG</span>
+            <strong class="flashcard__word">{{ card.word.word }}</strong>
+            <span class="flashcard__phonetic">{{ card.word.phonetic }} <span>·</span> {{ card.word.partOfSpeech }}</span>
+            <button type="button" class="flashcard__listen" aria-label="Nghe phát âm từ tiếng Anh" (click)="$event.stopPropagation(); speak()">
+              <app-icon name="headphones" /> Nghe phát âm
+            </button>
+            <span class="flashcard__flip-hint"><app-icon name="cards" /> Chạm hoặc nhấn Space để lật thẻ</span>
+          </article>
+          <article class="flashcard__face flashcard__face--back" [attr.aria-hidden]="!flipped()">
+            <span class="flashcard__hint">NGHĨA TIẾNG VIỆT</span>
+            <strong class="flashcard__meaning">{{ card.word.meaningVi }}</strong>
+            <div class="flashcard__example">
+              <p>{{ card.word.exampleEn }}</p>
+              <span>{{ card.word.exampleVi }}</span>
+            </div>
+            <button type="button" class="flashcard__listen" aria-label="Nghe phát âm từ tiếng Anh" (click)="$event.stopPropagation(); speak()">
+              <app-icon name="headphones" /> Nghe lại
+            </button>
+          </article>
+        </div>
+      </div>
+
+      @if (audioNotice()) {
+        <p class="study__audio-notice" role="status">{{ audioNotice() }}</p>
+      }
+      @if (error()) {
+        <p class="study__error" role="alert">{{ error() }}</p>
+      }
+
+      <div class="study__actions">
+        @if (!flipped()) {
+          <button type="button" class="study__button study__button--reveal" (click)="flip()">Lật thẻ <app-icon name="arrow-right" /></button>
+        } @else {
+          <button type="button" class="study__button study__button--unknown" [disabled]="saving() || pendingAnswer() !== null" (click)="answer(false)">
+            <app-icon name="close" /> Chưa nhớ
+          </button>
+          <button type="button" class="study__button study__button--known" [disabled]="saving() || pendingAnswer() !== null" (click)="answer(true)">
+            <app-icon name="check" /> Đã nhớ
+          </button>
+        }
+      </div>
+      @if (saving()) {
+        <p class="study__saving" role="status">Đang lưu tiến độ...</p>
+      } @else if (error()) {
+        <button type="button" class="study__text-button" (click)="answer(pendingAnswer() ?? false)">Thử lưu lại</button>
+      }
+
+      <footer class="study__tools">
+        <button type="button" [disabled]="saving()" [class.study__tool--active]="shuffled()" [attr.aria-pressed]="shuffled()" (click)="shuffleRemaining()">
+          <app-icon name="cards" /> Xáo trộn
+        </button>
+        <button type="button" [disabled]="saving()" [class.study__tool--active]="autoSpeak()" [attr.aria-pressed]="autoSpeak()" (click)="autoSpeak.update((value) => !value)">
+          <app-icon name="headphones" /> Tự phát âm {{ autoSpeak() ? 'đang bật' : 'đang tắt' }}
+        </button>
+        <span>Điểm lượt đầu: {{ firstPassCorrect() }}/{{ session()?.wordCount }}</span>
+      </footer>
+    </section>
+  }
+</main>

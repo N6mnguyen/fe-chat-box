@@ -14,7 +14,7 @@
     </header>
 
     <div class="panel__who">
-      <app-avatar [name]="conv.name" [seed]="conv.id" />
+      <app-avatar [name]="conv.name" [seed]="conv.id" [imageUrl]="conv.avatarUrl ?? null" />
       <p class="panel__name">{{ conv.name }}</p>
     </div>
 

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, HostListener, Input, Output, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import { IconComponent, IconName } from '../../shared/icon.component';
@@ -21,6 +22,7 @@ const SECTIONS: NavSection[] = [
     titleKey: 'nav.inbox',
     items: [
       { key: 'messages', icon: 'inbox', soon: false },
+      { key: 'vocab', icon: 'book', soon: false },
       { key: 'other', icon: 'archive', soon: true },
       { key: 'unread', icon: 'bubble', soon: true },
       { key: 'strangers', icon: 'user', soon: true },
@@ -40,7 +42,7 @@ const SECTIONS: NavSection[] = [
 
 /**
  * Điều hướng chính. Desktop rộng: sidebar đầy đủ; vừa: cột icon 64px; mobile: thanh dưới.
- * Chỉ "Tin nhắn" đã làm, các mục khác ghi "Sắp có".
+ * Tin nhắn và học từ vựng đã mở; các mục còn lại ghi "Sắp có".
  */
 @Component({
   selector: 'app-nav-sidebar',
@@ -61,6 +63,18 @@ export class NavSidebarComponent {
   readonly appearanceOpen = signal(false);
   /** Các nhóm đang thu gọn (theo titleKey). */
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
+
+  constructor(private readonly router: Router) {}
+
+  isActive(key: string): boolean {
+    return key === 'messages' ? !this.router.url.startsWith('/vocab') : key === 'vocab' && this.router.url.startsWith('/vocab');
+  }
+
+  navigate(key: string): void {
+    if (key === 'vocab') {
+      void this.router.navigateByUrl('/vocab');
+    }
+  }
 
   logout(): void {
     this.appearanceOpen.set(false);

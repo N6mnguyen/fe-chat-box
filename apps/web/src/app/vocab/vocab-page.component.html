@@ -1,0 +1,158 @@
+<main class="vocab">
+  <header class="vocab__topbar">
+    <a class="vocab__brand" routerLink="/" aria-label="NChat">
+      <span class="vocab__brand-mark" aria-hidden="true"><app-icon name="bubble" /></span>
+      <span>NChat <strong>Vocab</strong></span>
+    </a>
+    <button class="vocab__back-chat" type="button" (click)="exitToChat()"><app-icon name="back" /> <span>Về NChat</span></button>
+  </header>
+
+  <div class="vocab__content">
+    @if (selectedTopic(); as topic) {
+      <button class="vocab__back" type="button" (click)="backToCourses()"><app-icon name="back" /> Tất cả chủ đề</button>
+      <section class="course-config" aria-labelledby="config-title">
+        <div class="course-config__intro">
+          <div class="course-config__icon" aria-hidden="true">{{ topic.icon }}</div>
+          <div>
+            <p class="eyebrow">CẤU HÌNH BÀI HỌC</p>
+            <h1 id="config-title">{{ topic.name }}</h1>
+            <p>{{ topic.description }}</p>
+            <span class="course-config__count">{{ topic.wordCount }} từ trong chủ đề</span>
+          </div>
+        </div>
+
+        <section class="config-section" aria-labelledby="word-count-title">
+          <div class="config-section__heading">
+            <h2 id="word-count-title">Số từ mỗi bài</h2>
+            <span>Ưu tiên từ mới và từ bạn thường sai</span>
+          </div>
+          <div class="choice-row">
+            @for (count of wordCounts; track count) {
+              <button
+                type="button"
+                class="choice"
+                [class.choice--selected]="wordCount() === count"
+                [attr.aria-pressed]="wordCount() === count"
+                (click)="wordCount.set(count)"
+              >
+                <strong>{{ count }}</strong><span>từ</span>
+              </button>
+            }
+          </div>
+          @if (wordCount() > topic.wordCount) {
+            <p class="config-section__hint">Chủ đề hiện có {{ topic.wordCount }} từ; bài học sẽ dùng số từ hiện có.</p>
+          }
+        </section>
+
+        <section class="config-section" aria-labelledby="study-mode-title">
+          <div class="config-section__heading">
+            <h2 id="study-mode-title">Chọn cách học</h2>
+            <span>Chọn chế độ phù hợp với bạn</span>
+          </div>
+          <div class="mode-grid">
+            @for (studyMode of modes; track studyMode.id) {
+              <button
+                type="button"
+                class="mode"
+                [class.mode--selected]="mode() === studyMode.id"
+                [attr.aria-pressed]="mode() === studyMode.id"
+                (click)="selectMode(studyMode.id)"
+              >
+                <app-icon class="mode__icon" [name]="studyMode.icon" />
+                <span class="mode__copy"><strong>{{ studyMode.title }}</strong><span>{{ studyMode.description }}</span></span>
+                <span class="mode__radio" aria-hidden="true"></span>
+              </button>
+            }
+          </div>
+        </section>
+
+        @if (startNotice()) {
+          <p class="vocab__notice" role="status">{{ startNotice() }}</p>
+        }
+        <button class="primary-button" type="button" (click)="startStudy()">
+          Bắt đầu · {{ wordCount() > topic.wordCount ? topic.wordCount : wordCount() }} từ <app-icon name="arrow-right" />
+        </button>
+      </section>
+    } @else {
+      <section class="hero">
+        <div class="hero__copy">
+          <p class="eyebrow">HỌC MỖI NGÀY · TIẾN BỘ MỖI NGÀY</p>
+          <h1>Chinh phục từ vựng<br />cùng NChat <span>Vocab</span></h1>
+          <p>Chỉ vài phút mỗi ngày để tự tin hơn với tiếng Anh công việc và TOEIC.</p>
+        </div>
+        <div class="hero__mascot" role="img" aria-label="Khỉ xanh NChat sẵn sàng học cùng bạn">
+          <img src="/favicon.png" alt="" /><i><app-icon name="book" /></i>
+        </div>
+      </section>
+
+      <section class="summary" aria-label="Tổng quan học tập">
+        <article class="summary__card summary__card--streak">
+          <app-icon class="summary__icon" name="flame" />
+          <div><strong>{{ overview()?.summary?.streak ?? 0 }} ngày</strong><span>Chuỗi học liên tiếp</span></div>
+        </article>
+        <article class="summary__card">
+          <app-icon class="summary__icon" name="retry" />
+          <div><strong>{{ overview()?.summary?.dueToday ?? 0 }} từ</strong><span>Ôn tập hôm nay</span></div>
+        </article>
+        @if (continueTopic(); as topic) {
+          <button class="summary__continue" type="button" (click)="continueLearning()">
+            <app-icon class="summary__icon" name="play" />
+            <span><strong>Tiếp tục học</strong><span>{{ topic.name }} · {{ topic.learningCount }} từ đang học</span></span>
+            <app-icon name="arrow-right" />
+          </button>
+        }
+      </section>
+
+      <section class="courses" aria-labelledby="courses-title">
+        <div class="courses__heading">
+          <div>
+            <p class="eyebrow">CHỌN CHỦ ĐỀ</p>
+            <h2 id="courses-title">Khóa học từ vựng</h2>
+          </div>
+          <label class="search">
+            <app-icon name="search" />
+            <input type="search" [value]="search()" (input)="setSearch($event)" placeholder="Tìm chủ đề..." aria-label="Tìm chủ đề từ vựng" />
+          </label>
+        </div>
+
+        <div class="filters" role="group" aria-label="Lọc chủ đề">
+          <button type="button" [class.filters__selected]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="filter.set('all')">Tất cả</button>
+          <button type="button" [class.filters__selected]="filter() === 'new'" [attr.aria-pressed]="filter() === 'new'" (click)="filter.set('new')">Chưa học</button>
+          <button type="button" [class.filters__selected]="filter() === 'learning'" [attr.aria-pressed]="filter() === 'learning'" (click)="filter.set('learning')">Đang học</button>
+          <button type="button" [class.filters__selected]="filter() === 'mastered'" [attr.aria-pressed]="filter() === 'mastered'" (click)="filter.set('mastered')">Đã thuộc</button>
+        </div>
+
+        @if (loading()) {
+          <div class="state-card" role="status">Đang tải chủ đề từ vựng...</div>
+        } @else if (error()) {
+          <div class="state-card state-card--error" role="alert">
+            <p>{{ error() }}</p>
+            <button type="button" class="secondary-button" (click)="load()">Thử lại</button>
+          </div>
+        } @else if (filteredTopics().length) {
+          <div class="course-grid">
+            @for (topic of filteredTopics(); track topic.id) {
+              <button type="button" class="topic-card" (click)="chooseTopic(topic)" [attr.aria-label]="'Chọn chủ đề ' + topic.name">
+                <span class="topic-card__icon" aria-hidden="true">{{ topic.icon }}</span>
+                <span class="topic-card__body">
+                  <strong class="topic-card__name">{{ topic.name }}</strong>
+                  <span class="topic-card__description">{{ topic.description }}</span>
+                  <span class="topic-card__meta">{{ topic.wordCount }} từ <span>·</span> {{ topic.masteredCount }} từ đã thuộc</span>
+                  <span class="progress" role="progressbar" [attr.aria-label]="'Tiến độ ' + topic.name" [attr.aria-valuenow]="topic.progressPercent" aria-valuemin="0" aria-valuemax="100">
+                    <span class="progress__bar" [style.width.%]="topic.progressPercent"></span>
+                  </span>
+                  <span class="topic-card__percent">{{ topic.progressPercent }}% hoàn thành</span>
+                </span>
+                <app-icon class="topic-card__arrow" name="arrow-right" />
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="state-card">Không tìm thấy chủ đề phù hợp. Hãy thử từ khóa hoặc bộ lọc khác.</div>
+        }
+      </section>
+    }
+
+    <footer class="vocab__footer">Học đều một chút mỗi ngày — bạn sẽ tiến xa hơn mình nghĩ.</footer>
+  </div>
+</main>

@@ -14,6 +14,7 @@ export class AvatarComponent implements OnChanges {
   @Input({ required: true }) name = '';
   /** Khóa sinh màu; mặc định dùng tên. */
   @Input() seed = '';
+  @Input() imageUrl: string | null = null;
   @Input() online = false;
   @Input() showPresence = false;
 
