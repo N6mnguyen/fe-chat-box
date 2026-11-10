@@ -28,6 +28,11 @@
   &__answer-label { display: block; margin: 18px 0 7px; font-size: 13px; font-weight: 700; }
   &__input { width: 100%; min-height: 52px; padding: 0 15px; border: 1px solid var(--color-border); border-radius: 13px; outline: none; background: var(--color-raised); color: var(--color-text); font: inherit; font-size: 16px; }
   &__input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-soft); }
+  &__choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 18px 0 0; padding: 0; border: 0; }
+  &__choices legend { margin-bottom: 9px; font-size: 13px; font-weight: 700; }
+  &__choices button { min-height: 54px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-raised); color: var(--color-text); font: inherit; font-size: 20px; cursor: pointer; }
+  &__choices button:disabled { cursor: not-allowed; }
+  &__choices .listen__choice--selected { border-color: var(--color-primary); background: var(--color-primary-soft); }
   &__feedback { display: grid; gap: 4px; margin-top: 16px; padding: 13px 15px; border-radius: 12px; font-size: 14px; }
   &__feedback--correct { background: color-mix(in srgb, var(--color-success) 14%, var(--color-raised)); color: var(--color-success); }
   &__feedback--wrong { background: color-mix(in srgb, var(--color-danger) 12%, var(--color-raised)); color: var(--color-danger); }
@@ -69,6 +74,7 @@
   .listen__audio-controls { align-items: stretch; }
   .listen__play, .listen__slow { flex: 1; padding: 0 9px; font-size: 13px; }
   .listen__prompt { min-height: 170px; padding: 20px 15px; border-radius: 18px; }
+  .listen__choices { grid-template-columns: 1fr; }
   .listen__actions { gap: 8px; }
   .listen__primary, .listen__secondary { min-height: 46px; padding: 0 12px; }
   .listen__result-icon { width: 62px; height: 62px; margin-bottom: 12px; font-size: 30px; }

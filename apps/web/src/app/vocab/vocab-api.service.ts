@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { API_BASE_URL } from '../api-base-url';
 import { AuthStore } from '../auth/auth.store';
@@ -139,7 +140,10 @@ export class VocabApiService {
   private refreshInFlight?: Promise<string>;
   private readonly pronunciationCache = new Map<string, Promise<Blob>>();
 
-  constructor(@Inject(AuthStore) private readonly auth: InstanceType<typeof AuthStore>) {}
+  constructor(
+    @Inject(AuthStore) private readonly auth: InstanceType<typeof AuthStore>,
+    private readonly router: Router,
+  ) {}
 
   overview(language: VocabLanguage = 'en'): Promise<VocabOverview> {
     return this.request(`/v1/vocab/overview?language=${language}`);
@@ -230,6 +234,7 @@ export class VocabApiService {
   private async request<T>(path: string, init: RequestInit = {}, canRefresh = true): Promise<T> {
     const accessToken = this.auth.accessToken();
     if (!accessToken) {
+      this.navigateToLogin();
       throw new VocabApiError(401, 'UNAUTHENTICATED', 'Bạn cần đăng nhập lại.');
     }
 
@@ -251,9 +256,17 @@ export class VocabApiService {
       );
     }
 
-    if (response.status === 401 && canRefresh) {
-      await this.refreshAccessToken();
-      return this.request<T>(path, init, false);
+    if (response.status === 401) {
+      if (canRefresh) {
+        try {
+          await this.refreshAccessToken();
+        } catch (error) {
+          this.navigateToLogin();
+          throw error;
+        }
+        return this.request<T>(path, init, false);
+      }
+      this.navigateToLogin();
     }
 
     let payload: { error?: { code?: string; message?: string } } | T;
@@ -276,6 +289,7 @@ export class VocabApiService {
   private async requestAudio(path: string, init: RequestInit, canRefresh = true): Promise<Blob> {
     const accessToken = this.auth.accessToken();
     if (!accessToken) {
+      this.navigateToLogin();
       throw new VocabApiError(401, 'UNAUTHENTICATED', 'Bạn cần đăng nhập lại.');
     }
 
@@ -293,9 +307,17 @@ export class VocabApiService {
       throw new VocabApiError(0, 'NETWORK_ERROR', error instanceof Error ? error.message : 'Không kết nối được máy chủ.');
     }
 
-    if (response.status === 401 && canRefresh) {
-      await this.refreshAccessToken();
-      return this.requestAudio(path, init, false);
+    if (response.status === 401) {
+      if (canRefresh) {
+        try {
+          await this.refreshAccessToken();
+        } catch (error) {
+          this.navigateToLogin();
+          throw error;
+        }
+        return this.requestAudio(path, init, false);
+      }
+      this.navigateToLogin();
     }
     if (!response.ok) {
       let payload: { code?: string; message?: string };
@@ -325,5 +347,11 @@ export class VocabApiService {
       });
     }
     return this.refreshInFlight;
+  }
+
+  private navigateToLogin(): void {
+    void this.router.navigate(['/auth/login'], {
+      queryParams: { returnUrl: this.router.url },
+    });
   }
 }

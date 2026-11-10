@@ -49,6 +49,25 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
     const word = this.currentWord();
     return !word ? '' : this.listenStyle() === 'word' ? word.word : word.exampleTarget ?? word.exampleEn;
   });
+  readonly options = computed(() => {
+    const word = this.currentWord();
+    if (!word) {
+      return [];
+    }
+    const distractors = this.words()
+      .filter((item) => item.id !== word.id)
+      .map((item) => item.word);
+    for (let index = distractors.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [distractors[index], distractors[swap]] = [distractors[swap], distractors[index]];
+    }
+    const choices = [word.word, ...distractors.slice(0, 3)];
+    for (let index = choices.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(Math.random() * (index + 1));
+      [choices[index], choices[swap]] = [choices[swap], choices[index]];
+    }
+    return choices;
+  });
   readonly contextText = computed(() => {
     const word = this.currentWord();
     return !word ? '' : this.listenStyle() === 'word' ? word.meaningVi : word.exampleVi;
@@ -201,6 +220,11 @@ export class ListenFillStudyComponent implements OnInit, OnDestroy {
 
   checkAnswer(): void {
     this.submitAnswer(this.answerText());
+  }
+
+  selectOption(option: string): void {
+    this.answerText.set(option);
+    this.submitAnswer(option);
   }
 
   skip(): void {

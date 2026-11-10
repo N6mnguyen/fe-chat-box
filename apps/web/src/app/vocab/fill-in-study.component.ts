@@ -117,6 +117,7 @@ export class FillInStudyComponent implements OnInit, OnDestroy {
     try {
       const session = await this.api.startSession(topicId, wordCount, 'fill_blank');
       this.session.set(session);
+      this.multipleChoice.set(session.language === 'zh');
       this.startTimer(session.startedAt);
     } catch (error) {
       console.error('Không thể bắt đầu bài điền từ', error);

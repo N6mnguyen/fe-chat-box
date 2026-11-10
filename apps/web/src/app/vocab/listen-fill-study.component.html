@@ -60,7 +60,7 @@
   } @else if (currentWord(); as word) {
     <section class="listen__content" aria-labelledby="listen-title">
       <div class="listen__heading">
-        <div><p class="listen__eyebrow">NGHE VÀ ĐIỀN TỪ</p><h1 id="listen-title">Lắng nghe và nhập từ</h1></div>
+        <div><p class="listen__eyebrow">{{ session()?.language === 'zh' ? 'NGHE VÀ NHẬN DIỆN CHỮ HÁN' : 'NGHE VÀ ĐIỀN TỪ' }}</p><h1 id="listen-title">{{ session()?.language === 'zh' ? 'Lắng nghe và chọn chữ Hán' : 'Lắng nghe và nhập từ' }}</h1></div>
         <span>{{ currentIndex() + 1 }}/{{ words().length }}</span>
       </div>
       <div class="listen__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
@@ -74,7 +74,7 @@
 
       <article class="listen__prompt" aria-live="polite">
         <span class="listen__prompt-icon" aria-hidden="true"><app-icon name="headphones" /></span>
-        <p>{{ listenStyle() === 'word' ? (session()?.language === 'zh' ? 'Nghe từ tiếng Trung và nhập lại từ đó.' : 'Nghe từ tiếng Anh và nhập lại từ đó.') : 'Nghe câu ví dụ, rồi nhập từ còn thiếu.' }}</p>
+        <p>{{ listenStyle() === 'word' ? (session()?.language === 'zh' ? 'Nghe từ tiếng Trung rồi chọn chữ Hán tương ứng.' : 'Nghe từ tiếng Anh và nhập lại từ đó.') : (session()?.language === 'zh' ? 'Nghe câu tiếng Trung rồi chọn từ bạn nghe được.' : 'Nghe câu ví dụ, rồi nhập từ còn thiếu.') }}</p>
         <span class="listen__context">{{ contextText() }}</span>
       </article>
 
@@ -93,28 +93,37 @@
       @if (audioNotice()) {
         <p class="listen__notice" role="status">{{ audioNotice() }}</p>
       }
-      <p class="listen__length">Từ cần nhập gồm {{ word.word.length }} ký tự.</p>
-      <label class="listen__answer-label" for="listen-answer">Đáp án của bạn</label>
-      <input
-        id="listen-answer"
-        class="listen__input"
-        type="text"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        maxlength="120"
-        [value]="answerText()"
-        [disabled]="checked() !== null || saving() || pendingAnswer() !== null"
-        (input)="setAnswer($event)"
-        (keydown.enter)="checkAnswer()"
-        placeholder="Nhập từ tiếng Anh bạn nghe được..."
-      />
+      @if (session()?.language === 'zh') {
+        <fieldset class="listen__choices" [disabled]="checked() !== null || saving() || pendingAnswer() !== null">
+          <legend>Chọn từ tiếng Trung bạn vừa nghe</legend>
+          @for (option of options(); track option) {
+            <button type="button" [class.listen__choice--selected]="answerText() === option" (click)="selectOption(option)">{{ option }}</button>
+          }
+        </fieldset>
+      } @else {
+        <p class="listen__length">Từ cần nhập gồm {{ word.word.length }} ký tự.</p>
+        <label class="listen__answer-label" for="listen-answer">Đáp án của bạn</label>
+        <input
+          id="listen-answer"
+          class="listen__input"
+          type="text"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          maxlength="120"
+          [value]="answerText()"
+          [disabled]="checked() !== null || saving() || pendingAnswer() !== null"
+          (input)="setAnswer($event)"
+          (keydown.enter)="checkAnswer()"
+          placeholder="Nhập từ tiếng Anh bạn nghe được..."
+        />
+      }
 
       @if (checked() !== null) {
         <div class="listen__feedback" [class.listen__feedback--correct]="checked()" [class.listen__feedback--wrong]="!checked()" role="status">
           <strong>{{ checked() ? 'Chính xác! 🎉' : 'Chưa đúng, đáp án đúng là: ' + word.word }}</strong>
           @if (!checked() && submittedAnswer()) {
-            <span>Bạn đã nhập: {{ submittedAnswer() }}</span>
+            <span>{{ session()?.language === 'zh' ? 'Bạn đã chọn: ' : 'Bạn đã nhập: ' }}{{ submittedAnswer() }}</span>
           }
         </div>
       }

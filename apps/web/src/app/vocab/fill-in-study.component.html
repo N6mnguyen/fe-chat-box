@@ -60,7 +60,7 @@
   } @else if (currentWord(); as word) {
     <section class="fill-in__content" aria-labelledby="fill-title">
       <div class="fill-in__heading">
-        <div><p class="fill-in__eyebrow">ĐIỀN TỪ VÀO CHỖ TRỐNG</p><h1 id="fill-title">Chọn từ phù hợp với câu</h1></div>
+        <div><p class="fill-in__eyebrow">{{ session()?.language === 'zh' ? 'NHẬN DIỆN CHỮ HÁN' : 'ĐIỀN TỪ VÀO CHỖ TRỐNG' }}</p><h1 id="fill-title">{{ session()?.language === 'zh' ? 'Chọn chữ Hán phù hợp với câu' : 'Chọn từ phù hợp với câu' }}</h1></div>
         <span>{{ currentIndex() + 1 }}/{{ words().length }}</span>
       </div>
       <div class="fill-in__progress" role="progressbar" aria-label="Tiến độ bài học" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
@@ -73,12 +73,14 @@
         <span class="fill-in__meaning">{{ word.meaningVi }}</span>
       </article>
 
-      <div class="fill-in__hint">
-        <span>Gợi ý: {{ hintText() }}</span>
-        <button type="button" [disabled]="checked() !== null || saving() || hintCount() >= maxHints(word)" (click)="revealHint()">
-          <app-icon name="lightbulb" /> Gợi ý (-0,1 điểm mỗi chữ)
-        </button>
-      </div>
+      @if (session()?.language !== 'zh') {
+        <div class="fill-in__hint">
+          <span>Gợi ý: {{ hintText() }}</span>
+          <button type="button" [disabled]="checked() !== null || saving() || hintCount() >= maxHints(word)" (click)="revealHint()">
+            <app-icon name="lightbulb" /> Gợi ý (-0,1 điểm mỗi chữ)
+          </button>
+        </div>
+      }
 
       @if (!multipleChoice()) {
         <label class="fill-in__answer-label" for="vocab-answer">Đáp án của bạn</label>
@@ -98,7 +100,7 @@
         />
       } @else {
         <fieldset class="fill-in__choices" [disabled]="checked() !== null || saving() || pendingAnswer() !== null">
-          <legend>Chọn một đáp án</legend>
+          <legend>{{ session()?.language === 'zh' ? 'Chọn một chữ Hán' : 'Chọn một đáp án' }}</legend>
           @for (option of options(); track option) {
             <button type="button" [class.fill-in__choice--selected]="answerText() === option" (click)="selectOption(option)">{{ option }}</button>
           }
@@ -135,9 +137,11 @@
         }
       </div>
 
-      <button class="fill-in__mode-toggle" type="button" [disabled]="checked() !== null || saving()" [attr.aria-pressed]="multipleChoice()" (click)="multipleChoice.update((value) => !value)">
-        {{ multipleChoice() ? 'Tắt' : 'Bật' }} trắc nghiệm 4 đáp án
-      </button>
+      @if (session()?.language !== 'zh') {
+        <button class="fill-in__mode-toggle" type="button" [disabled]="checked() !== null || saving()" [attr.aria-pressed]="multipleChoice()" (click)="multipleChoice.update((value) => !value)">
+          {{ multipleChoice() ? 'Tắt' : 'Bật' }} trắc nghiệm 4 đáp án
+        </button>
+      }
     </section>
   }
 </main>
