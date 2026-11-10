@@ -1,6 +1,8 @@
 import {
   ChatPort,
   ApiConversation,
+  ApiAttachment,
+  AttachmentDownloadUrl,
   ApiFriend,
   ApiFriendRequest,
   ApiMe,
@@ -122,6 +124,8 @@ class FakeChatApi implements ChatPort {
     conversationId: string,
     clientMsgId: string,
     body: string,
+    _replyTo?: { messageId: string; senderName: string; text: string },
+    attachmentIds: string[] = [],
   ): Promise<ApiMessage> {
     this.sentIds.push(clientMsgId);
     const saved = message({
@@ -130,12 +134,35 @@ class FakeChatApi implements ChatPort {
       conversationId,
       createdSeq: String((this.storedMessages.get(conversationId)?.length ?? 0) + 1),
       body,
+      attachments: attachmentIds.map((id) => ({
+        id,
+        name: 'sample.txt',
+        size: 4,
+        mimeType: 'text/plain',
+      })),
       status: 'sent',
       createdAt: new Date(Date.now() + 1).toISOString(),
       updatedAt: new Date(Date.now() + 1).toISOString(),
     });
     this.storedMessages.set(conversationId, [...(this.storedMessages.get(conversationId) ?? []), saved]);
     return saved;
+  }
+
+  async uploadAttachment(file: File): Promise<ApiAttachment> {
+    return {
+      id: `attachment-${file.name}`,
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream',
+    };
+  }
+
+  async attachmentDownloadUrls(ids: string[]): Promise<AttachmentDownloadUrl[]> {
+    return ids.map((id) => ({
+      id,
+      url: `https://storage.example/${id}`,
+      downloadUrl: `https://storage.example/${id}?download`,
+    }));
   }
 
   async updateConversation(
@@ -265,10 +292,17 @@ describe('ChatService with API-backed data', () => {
     expect(chat.conversations()[0].lastText).toBe('Tin mới');
   });
 
-  it('rejects attachments until the storage API is available', async () => {
-    await expect(chat.send('c1', '', [new File(['data'], 'sample.txt')]))
-      .rejects.toThrow('Tệp đính kèm chưa được hỗ trợ.');
-    expect(api.sentIds).toHaveLength(0);
+  it('uploads and sends file attachments with downloadable URLs', async () => {
+    await chat.send('c1', '', [new File(['data'], 'sample.txt', { type: 'text/plain' })]);
+
+    const sent = chat.selectedMessages().at(-1);
+    expect(api.sentIds).toHaveLength(1);
+    expect(sent?.type).toBe('file');
+    expect(sent?.attachment).toMatchObject({
+      name: 'sample.txt',
+      url: 'https://storage.example/attachment-sample.txt',
+      downloadUrl: 'https://storage.example/attachment-sample.txt?download',
+    });
   });
 
   it('enforces the edit and recall guards', () => {

@@ -286,6 +286,7 @@
     "label": "Soạn tin nhắn",
     "placeholder": "Nhắn tin tới {{ name }}...",
     "send": "Gửi tin nhắn",
+    "saveFiles": "Gửi tệp",
     "sending": "Đang gửi",
     "emoji": "Chọn emoji",
     "emojiList": "Danh sách emoji",
@@ -293,6 +294,11 @@
     "file": "Đính kèm tệp",
     "removeFile": "Bỏ tệp {{ name }}",
     "fileTooLarge": "Tệp vượt quá 100MB nên không thể đính kèm.",
+    "fileLimit": "Mỗi tin nhắn chỉ được đính kèm tối đa 20 tệp.",
+    "uploadStageError": "Không tải tệp lên được.",
+    "sendStageError": "Tệp đã tải lên nhưng không gửi vào tin nhắn được.",
+    "download-urlStageError": "Tin đã gửi nhưng chưa lấy được liên kết tệp.",
+    "partialSend": "Đã gửi {{ n }} tệp trước khi xảy ra lỗi. Hãy gửi lại các tệp còn lại.",
     "sendError": "Không gửi được tin nhắn. Vui lòng thử lại."
   },
   "lightbox": {

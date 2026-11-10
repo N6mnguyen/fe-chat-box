@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
+import { patchState, signalStore, withHooks, withMethods, withState } from '@ngrx/signals';
 
 import {
   AUTH_API,
@@ -66,7 +66,11 @@ export const AuthStore = signalStore(
         challenge: null,
         error: null,
       });
-      saveStoredSession({ accessToken: session.accessToken, user: session.user ?? null });
+      saveStoredSession({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        user: session.user ?? null,
+      });
     };
 
     const failRequest = (error: unknown): never => {
@@ -165,7 +169,12 @@ export const AuthStore = signalStore(
           await saveSession(session);
           return session.accessToken;
         } catch (error) {
-          await secureTokens.clear();
+          // Chỉ xoá phiên khi server từ chối token; lỗi mạng/5xx giữ nguyên để thử lại.
+          if (error instanceof AuthApiError && error.details.code === 'INVALID_CREDENTIALS') {
+            clearStoredSession();
+            patchState(store, { ...initialState });
+            await secureTokens.clear();
+          }
           return failRequest(error);
         }
       },
@@ -188,4 +197,13 @@ export const AuthStore = signalStore(
       },
     };
   }),
+  withHooks((_store, secureTokens = inject(SECURE_TOKEN_STORE)) => ({
+    // Nạp lại refresh token đã lưu để access token hết hạn tự refresh sau F5.
+    onInit: () => {
+      const stored = loadStoredSession();
+      if (stored) {
+        void secureTokens.setRefreshToken(stored.refreshToken);
+      }
+    },
+  })),
 );

@@ -31,7 +31,7 @@
             </span>
           }
 
-          <div class="row__content" [cdkContextMenuTriggerFor]="actions" [cdkContextMenuTriggerData]="{ $implicit: row }">
+          <div class="row__content" tabindex="-1" [cdkContextMenuTriggerFor]="actions" [cdkContextMenuTriggerData]="{ $implicit: row }">
             <div class="react-pop">
               <button
                 type="button"
@@ -119,7 +119,7 @@
                       </span>
                       <a
                         class="file__download"
-                        [href]="file.url"
+                        [href]="file.downloadUrl || file.url"
                         [download]="file.name"
                         [attr.aria-label]="'info.download' | transloco: { name: file.name }"
                         [title]="'info.download' | transloco: { name: file.name }"

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Inject, OnInit, Signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Inject, OnInit, Signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -38,6 +38,12 @@ export class App implements OnInit {
     private readonly transloco: TranslocoService,
   ) {
     void this.theme;
+    // Phiên bị thu hồi/hết hạn (refresh thất bại) -> về trang đăng nhập.
+    effect(() => {
+      if (this.auth.status() === 'unauthenticated') {
+        void this.router.navigateByUrl('/auth/login');
+      }
+    });
     this.selected = chat.selected;
     this.messages = chat.selectedMessages;
     this.typingId = chat.typingId;

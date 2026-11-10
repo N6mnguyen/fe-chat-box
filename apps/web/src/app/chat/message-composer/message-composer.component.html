@@ -1,4 +1,13 @@
-<form class="composer" [formGroup]="form" (submit)="$event.preventDefault(); submit()" [attr.aria-label]="'composer.label' | transloco">
+<form
+  class="composer"
+  [class.composer--dragging]="draggingFiles()"
+  [formGroup]="form"
+  (submit)="$event.preventDefault(); submit()"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+  [attr.aria-label]="'composer.label' | transloco"
+>
   @if (replyMessage; as reply) {
     <div class="composer__reply" role="status">
       <span><strong>{{ 'messages.reply' | transloco }} · {{ reply.senderName }}</strong><br />{{ reply.content || reply.attachment?.name }}</span>
@@ -10,18 +19,30 @@
   @if (fileError()) {
     <p class="composer__error" role="alert">{{ 'composer.fileTooLarge' | transloco }}</p>
   }
+  @if (fileLimitError()) {
+    <p class="composer__error" role="alert">{{ 'composer.fileLimit' | transloco }}</p>
+  }
   @if (errorKey) {
-    <p class="composer__error" role="alert">{{ errorKey | transloco }}</p>
+    <p class="composer__error" role="alert">
+      {{ errorKey | transloco }}
+      @if (errorDetail) {
+        <span>{{ errorDetail }}</span>
+      }
+    </p>
   }
 
   @if (files().length > 0) {
     <ul class="chips">
       @for (file of files(); track $index) {
         <li class="chip">
-          <app-icon name="file" />
+          @if (isImage(file)) {
+            <img class="chip__preview" [src]="previewUrl(file)" [alt]="file.name" />
+          } @else {
+            <app-icon name="file" />
+          }
           <span class="chip__name" [title]="file.name">{{ file.name }}</span>
           <span class="chip__size">{{ sizeLabel(file.size) }}</span>
-          <button type="button" class="chip__remove" [attr.aria-label]="'composer.removeFile' | transloco: { name: file.name }" (click)="removeFile($index)">
+          <button type="button" class="chip__remove" [disabled]="sending" [attr.aria-label]="'composer.removeFile' | transloco: { name: file.name }" (click)="removeFile($index)">
             <app-icon name="close" />
           </button>
         </li>
@@ -45,6 +66,7 @@
       [attr.aria-expanded]="emojiOpen()"
       [attr.aria-label]="'composer.emoji' | transloco"
       [title]="'composer.emoji' | transloco"
+      [disabled]="sending"
       (click)="toggleEmoji()"
     >
       <app-icon name="emoji" />
@@ -53,13 +75,13 @@
     <label class="icon-btn" [title]="'composer.image' | transloco">
       <app-icon name="image" />
       <span class="visually-hidden">{{ 'composer.image' | transloco }}</span>
-      <input class="visually-hidden" type="file" accept="image/*" multiple (change)="onFilesPicked($event)" />
+      <input class="visually-hidden" type="file" accept="image/*" multiple [disabled]="sending" (change)="onFilesPicked($event)" />
     </label>
 
     <label class="icon-btn" [title]="'composer.file' | transloco">
       <app-icon name="attach" />
       <span class="visually-hidden">{{ 'composer.file' | transloco }}</span>
-      <input class="visually-hidden" type="file" multiple (change)="onFilesPicked($event)" />
+      <input class="visually-hidden" type="file" multiple [disabled]="sending" (change)="onFilesPicked($event)" />
     </label>
 
     <textarea
@@ -68,17 +90,19 @@
       formControlName="content"
       [placeholder]="'composer.placeholder' | transloco"
       [attr.aria-label]="'composer.placeholder' | transloco"
+      [disabled]="sending"
       (keydown)="onKeydown($event)"
+      (paste)="onPaste($event)"
     ></textarea>
 
     <button
       type="submit"
       class="send"
       [disabled]="!canSend"
-      [attr.aria-label]="(sending ? 'composer.sending' : 'composer.send') | transloco"
-      [title]="'composer.send' | transloco"
+      [attr.aria-label]="(sending ? 'composer.sending' : files().length && !form.controls.content.value.trim() ? 'composer.saveFiles' : 'composer.send') | transloco"
+      [title]="(files().length && !form.controls.content.value.trim() ? 'composer.saveFiles' : 'composer.send') | transloco"
     >
-      <app-icon name="send" />
+      <app-icon [name]="files().length && !form.controls.content.value.trim() ? 'download' : 'send'" />
     </button>
   </div>
 </form>

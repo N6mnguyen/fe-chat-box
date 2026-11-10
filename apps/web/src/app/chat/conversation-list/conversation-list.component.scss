@@ -45,7 +45,7 @@
     border-radius: 999px;
     background: var(--color-primary-soft);
     color: var(--color-text);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     white-space: nowrap;
   }
 
@@ -131,7 +131,7 @@
     background: var(--color-primary-soft);
     color: var(--color-link);
     font: inherit;
-    font-size: 11px;
+    font-size: var(--font-size-xs);
     cursor: pointer;
   }
 
@@ -173,7 +173,7 @@
   &__hint {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
   }
 
   &__candidates {
@@ -209,7 +209,7 @@
 
     span {
       color: var(--color-text-muted);
-      font-size: 11px;
+      font-size: var(--font-size-xs);
     }
   }
 
@@ -270,7 +270,7 @@
   &__sync {
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
   }
 
   &__sync {
@@ -302,7 +302,7 @@
   background: var(--color-primary);
   color: var(--color-primary-contrast);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   cursor: pointer;
 
   &:disabled {
@@ -443,7 +443,7 @@
   border-radius: 10px;
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  font-size: 11px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   line-height: 20px;
   text-align: center;

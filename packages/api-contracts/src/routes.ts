@@ -79,6 +79,11 @@ export const routes: Route[] = [
   r({ method: 'get', path: '/v1/conversations/{conversationId}/changes', auth: 'token', summary: 'Change log sau afterSeq; 410 nếu quá cũ', query: C.ChangesQuery, status: 200, response: C.ChangePage, errors: [400, 401, 404, 410] }),
   r({ method: 'put', path: '/v1/conversations/{conversationId}/receipts', auth: 'token', summary: 'Cập nhật deliveredSeq/readSeq (chỉ tăng)', body: C.ReceiptUpdate, status: 200, response: C.Receipt, errors: [400, 401, 404], rateLimit: 'receipt', idempotency: 'natural' }),
 
+  // ---- attachments ----
+  r({ method: 'post', path: '/v1/attachments', auth: 'token', summary: 'Tạo URL tải tệp lên có ký; tối đa 100 MB', body: C.AttachmentUploadRequest, status: 201, response: C.AttachmentUploadResponse, errors: [400, 401, 503] }),
+  r({ method: 'post', path: '/v1/attachments/{attachmentId}/complete', auth: 'token', summary: 'Xác minh kích thước và hoàn tất tải lên', status: 200, response: C.AttachmentUploadComplete, errors: [400, 401, 404, 409] }),
+  r({ method: 'post', path: '/v1/attachments/download-urls', auth: 'token', summary: 'Tạo URL tải xuống cho tệp trong hội thoại của tôi', body: C.AttachmentDownloadUrlsRequest, status: 200, response: C.AttachmentDownloadUrlsResponse, errors: [400, 401, 404, 503] }),
+
   // ---- sync / reports / ops ----
   r({ method: 'get', path: '/v1/sync', auth: 'token', summary: 'Delta user_changes; không cursor = lần đầu', query: C.SyncQuery, status: 200, response: C.SyncPage, errors: [400, 401, 410] }),
   r({ method: 'post', path: '/v1/reports', auth: 'token', summary: '⚖ Báo cáo người/tin; lưu bản chụp', body: C.ReportCreate, status: 202, response: C.ReportAccepted, errors: [400, 401, 404, 429], rateLimit: 'report', idempotency: 'Idempotency-Key' }),

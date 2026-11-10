@@ -25,6 +25,7 @@
     <app-message-composer
       [sending]="sending()"
       [errorKey]="errorKey()"
+      [errorDetail]="errorDetail()"
       [replyMessage]="replyMessage()"
       (replyCancelled)="replyMessage.set(null)"
       (messageSent)="onSend($event)"

@@ -79,6 +79,10 @@
   --radius-md: 12px;
   --radius-lg: 18px;
   --font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --line-height-base: 1.55;
   --wallpaper: none;
 }
 
@@ -125,7 +129,11 @@ body {
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font: 14px/1.45 var(--font-family);
+  font: var(--font-size-base)/var(--line-height-base) var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  overflow-wrap: break-word;
 }
 
 button,

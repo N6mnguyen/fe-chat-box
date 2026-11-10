@@ -7,6 +7,7 @@ import {
   OnChanges,
   Output,
   SimpleChanges,
+  ViewChild,
   computed,
   signal,
 } from '@angular/core';
@@ -18,8 +19,9 @@ import { AvatarComponent } from '../../shared/avatar.component';
 import { IconComponent } from '../../shared/icon.component';
 import { UiFeedbackService } from '../../shared/ui-feedback.service';
 
+import { ChatApiError } from '../chat-api';
 import { Conversation, Message, OutgoingMessage } from '../chat.models';
-import { ChatService } from '../chat.service';
+import { AttachmentSendError, ChatService } from '../chat.service';
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
 import { InfoPanelComponent } from '../info-panel/info-panel.component';
 import { MessageComposerComponent } from '../message-composer/message-composer.component';
@@ -48,12 +50,14 @@ export class ChatWindowComponent implements OnChanges {
   readonly query = signal('');
   readonly sending = signal(false);
   readonly errorKey = signal('');
+  readonly errorDetail = signal('');
   readonly replyMessage = signal<Message | null>(null);
   readonly forwardMessage = signal<Message | null>(null);
   readonly forwardTargets = signal<ReadonlySet<string>>(new Set());
   readonly forwarding = signal(false);
   readonly forwardSearch = signal('');
   readonly targetConversations: ChatService['conversations'];
+  @ViewChild(MessageComposerComponent) private composer?: MessageComposerComponent;
   readonly filteredTargets = computed(() => this.targetConversations()
     .filter((target) => target.name.toLocaleLowerCase('vi').includes(this.forwardSearch().trim().toLocaleLowerCase('vi'))));
 
@@ -198,11 +202,32 @@ export class ChatWindowComponent implements OnChanges {
   async onSend(outgoing: OutgoingMessage): Promise<void> {
     this.sending.set(true);
     this.errorKey.set('');
+    this.errorDetail.set('');
     try {
       await this.chat.send(this.conversation.id, outgoing.content, outgoing.files, outgoing.replyTo);
+      this.composer?.clearAfterSend();
     } catch (error) {
+      if (error instanceof AttachmentSendError) {
+        this.composer?.removeFiles(outgoing.files.slice(0, error.sentFiles));
+        if (error.textSent) {
+          this.composer?.clearTextAfterPartialSend();
+        }
+        if (error.sentFiles) {
+          this.feedback.error(this.transloco.translate('composer.partialSend', {
+            n: error.sentFiles,
+          }));
+        }
+        this.errorKey.set(`composer.${error.stage}StageError`);
+        const cause = error.cause;
+        if (cause instanceof ChatApiError) {
+          this.errorDetail.set(`${cause.status ? `HTTP ${cause.status}: ` : ''}${cause.message}`);
+        } else if (cause instanceof Error) {
+          this.errorDetail.set(cause.message);
+        }
+      } else {
+        this.errorKey.set('composer.sendError');
+      }
       console.error('Gửi tin nhắn thất bại', error);
-      this.errorKey.set('composer.sendError');
     } finally {
       this.sending.set(false);
     }

@@ -29,6 +29,15 @@ export const Reaction = z
   .object({ emoji: z.string().min(1).max(8), count: z.number().int().positive(), mine: z.boolean() })
   .meta({ id: 'Reaction' });
 
+export const Attachment = z
+  .object({
+    id: Id,
+    name: z.string().min(1).max(255),
+    size: z.number().int().positive().max(100 * 1024 * 1024),
+    mimeType: z.string().min(1).max(100),
+  })
+  .meta({ id: 'Attachment' });
+
 export const Message = z
   .object({
     id: Id,
@@ -40,7 +49,7 @@ export const Message = z
     body: z.string().nullable(),
     deleted: z.boolean(),
     replyTo: ReplyPreview.nullable(),
-    attachments: z.array(z.never()).max(0), // file sau MVP; chỉ [] trong v1
+    attachments: z.array(Attachment).max(20),
     senderName: z.string().max(80).optional(),
     reactions: z.array(Reaction).optional(),
     status: z.enum(['sent', 'delivered', 'seen']).optional(),
@@ -51,11 +60,49 @@ export const Message = z
   .meta({ id: 'Message' });
 
 export const SendMessageRequest = z
-  .object({ clientMsgId: Id, body: z.string().min(1).max(10_000), replyToId: Id.nullable().default(null), attachments: z.array(z.never()).max(0).default([]) })
+  .object({
+    clientMsgId: Id,
+    body: z.string().max(10_000),
+    replyToId: Id.nullable().default(null),
+    attachments: z.array(Id).max(20).default([]),
+  })
+  .refine((message) => message.body.trim().length > 0 || message.attachments.length > 0)
   .meta({ id: 'SendMessageRequest' });
 export const SendMessageResponse = z.object({ message: Message, duplicate: z.boolean() }).meta({ id: 'SendMessageResponse' });
 export const EditMessageRequest = z.object({ body: z.string().min(1).max(10_000) }).meta({ id: 'EditMessageRequest' });
 export const ReactionToggle = z.object({ emoji: z.string().min(1).max(8) }).meta({ id: 'ReactionToggle' });
+
+export const AttachmentUploadRequest = z
+  .object({
+    fileName: z.string().min(1).max(255),
+    mimeType: z.string().regex(/^[\w.+-]+\/[\w.+-]+$/).max(100),
+    size: z.number().int().positive().max(100 * 1024 * 1024),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/i),
+  })
+  .meta({ id: 'AttachmentUploadRequest' });
+export const AttachmentUploadResponse = z
+  .object({
+    id: Id,
+    fileName: z.string().min(1).max(255),
+    mimeType: z.string().min(1).max(100),
+    size: z.number().int().positive().max(100 * 1024 * 1024),
+    alreadyUploaded: z.boolean(),
+    uploadUrl: z.url().optional(),
+    uploadApiKey: z.string().min(1).optional(),
+  })
+  .meta({ id: 'AttachmentUploadResponse' });
+export const AttachmentUploadComplete = z
+  .object({ id: Id, ready: z.literal(true) })
+  .meta({ id: 'AttachmentUploadComplete' });
+export const AttachmentDownloadUrl = z
+  .object({ id: Id, url: z.url(), downloadUrl: z.url() })
+  .meta({ id: 'AttachmentDownloadUrl' });
+export const AttachmentDownloadUrlsRequest = z
+  .object({ ids: z.array(Id).min(1).max(100).refine((ids) => new Set(ids).size === ids.length) })
+  .meta({ id: 'AttachmentDownloadUrlsRequest' });
+export const AttachmentDownloadUrlsResponse = z
+  .object({ items: z.array(AttachmentDownloadUrl) })
+  .meta({ id: 'AttachmentDownloadUrlsResponse' });
 
 export const Conversation = z
   .object({

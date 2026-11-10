@@ -2,63 +2,53 @@ import { AuthUser } from './auth-api';
 
 export interface StoredSession {
   accessToken: string;
+  refreshToken: string;
   user: AuthUser | null;
 }
 
-interface PersistedSession extends StoredSession {
-  expiresAt: number;
+const KEY = 'vchat.session';
+// Khớp TTL refresh token ở BE (REFRESH_TTL_MS). Cookie hết hạn = hết phiên; mỗi lần refresh được ghi lại và gia hạn.
+const SESSION_TTL_MS = 14 * 24 * 60 * 60_000;
+
+// ponytail: cookie JS-readable nên XSS vẫn đọc được; HttpOnly cần server set cookie.
+function readCookie(): string | null {
+  const m = document.cookie.match(new RegExp(`(?:^|; )${KEY}=([^;]*)`));
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
-const KEY = 'vchat.session';
-// ponytail: token không phải JWT (vd. Google ya29) không có exp; giả định 1 giờ. Dùng expires_in của server khi có.
-const DEFAULT_TTL_MS = 60 * 60_000;
+function writeCookie(value: string, expires: Date): void {
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${KEY}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; SameSite=Strict${secure}`;
+}
 
-// ponytail: token nằm trong localStorage nên XSS đọc được; chuyển cookie HttpOnly khi có refresh token.
-export function loadStoredSession(now = Date.now()): StoredSession | null {
+/** Trả phiên đã lưu kể cả khi access token hết hạn: request đầu tiên nhận 401 sẽ tự refresh. */
+export function loadStoredSession(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(KEY);
-    const parsed = raw ? (JSON.parse(raw) as Partial<PersistedSession>) : null;
-    if (
-      !parsed ||
-      typeof parsed.accessToken !== 'string' ||
-      typeof parsed.expiresAt !== 'number' ||
-      parsed.expiresAt <= now
-    ) {
-      localStorage.removeItem(KEY);
+    const raw = readCookie();
+    const parsed = raw ? (JSON.parse(raw) as Partial<StoredSession>) : null;
+    if (!parsed || typeof parsed.accessToken !== 'string' || typeof parsed.refreshToken !== 'string') {
+      clearStoredSession();
       return null;
     }
-    return { accessToken: parsed.accessToken, user: parsed.user ?? null };
+    return { accessToken: parsed.accessToken, refreshToken: parsed.refreshToken, user: parsed.user ?? null };
   } catch {
     return null;
   }
 }
 
 export function saveStoredSession(session: StoredSession, now = Date.now()): void {
-  const persisted: PersistedSession = {
-    ...session,
-    expiresAt: jwtExpiry(session.accessToken) ?? now + DEFAULT_TTL_MS,
-  };
   try {
-    localStorage.setItem(KEY, JSON.stringify(persisted));
+    writeCookie(JSON.stringify(session), new Date(now + SESSION_TTL_MS));
   } catch {
-    // Storage bị chặn/đầy: vẫn đăng nhập trong phiên hiện tại, chỉ không nhớ được.
+    // Cookie bị chặn: vẫn đăng nhập trong phiên hiện tại, chỉ không nhớ được.
   }
 }
 
 export function clearStoredSession(): void {
   try {
-    localStorage.removeItem(KEY);
+    writeCookie('', new Date(0));
+    localStorage.removeItem(KEY); // phiên cũ từ bản lưu bằng localStorage
   } catch {
     // Không có gì để xoá.
-  }
-}
-
-/** Trả exp (ms) nếu token là JWT, ngược lại null. */
-function jwtExpiry(token: string): number | null {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: unknown };
-    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
-  } catch {
-    return null;
   }
 }

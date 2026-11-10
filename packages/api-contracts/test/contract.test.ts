@@ -62,10 +62,23 @@ test('login response là TokenPair hoặc OTP challenge', () => {
   assert.ok(LoginResponse.safeParse({ challenge: 'device_otp', challengeId: crypto.randomUUID(), expiresAt: '2026-10-28T00:00:00Z' }).success);
 });
 
-test('message: attachments chỉ [] trong v1; body giới hạn', () => {
+test('message: hỗ trợ tin nhắn văn bản, tệp đính kèm và giới hạn body', () => {
   const base = { clientMsgId: crypto.randomUUID(), body: 'hi' };
   assert.deepEqual(SendMessageRequest.parse(base).attachments, []);
-  assert.ok(!SendMessageRequest.safeParse({ ...base, attachments: [{ id: 'x' }] }).success);
+  assert.ok(SendMessageRequest.safeParse({
+    ...base,
+    attachments: [crypto.randomUUID()],
+  }).success);
+  assert.ok(SendMessageRequest.safeParse({
+    ...base,
+    body: '',
+    attachments: [crypto.randomUUID()],
+  }).success);
+  assert.ok(!SendMessageRequest.safeParse({ ...base, body: '', attachments: [] }).success);
+  assert.ok(!SendMessageRequest.safeParse({
+    ...base,
+    attachments: Array.from({ length: 21 }, () => crypto.randomUUID()),
+  }).success);
   assert.ok(!SendMessageRequest.safeParse({ ...base, body: '' }).success);
   // senderId từ client bị strip: parse phải thành công VÀ không còn key (không chỉ "không lỗi").
   const spoof = SendMessageRequest.safeParse({ ...base, senderId: crypto.randomUUID() });
@@ -74,12 +87,27 @@ test('message: attachments chỉ [] trong v1; body giới hạn', () => {
   assert.equal(SendMessageRequest.parse(base).replyToId, null);
 });
 
+test('attachment routes match the upload and download API', () => {
+  for (const path of [
+    '/v1/attachments',
+    '/v1/attachments/{attachmentId}/complete',
+    '/v1/attachments/download-urls',
+  ]) {
+    assert.ok(routes.some((route) => route.path === path), path);
+  }
+});
+
 test('message: trích dẫn reply là preview đọc lúc truy vấn; không khả dụng thì body null', () => {
   const now = '2026-10-28T00:00:00Z';
   const msg = {
     id: crypto.randomUUID(), conversationId: crypto.randomUUID(), senderId: crypto.randomUUID(),
     clientMsgId: crypto.randomUUID(), createdSeq: '2', latestSeq: '2', body: 'ok', deleted: false,
-    attachments: [], createdAt: now, updatedAt: now,
+    attachments: [{
+      id: crypto.randomUUID(),
+      name: 'image.png',
+      size: 1024,
+      mimeType: 'image/png',
+    }], createdAt: now, updatedAt: now,
     replyTo: { id: crypto.randomUUID(), senderId: crypto.randomUUID(), available: false, body: null },
   };
   assert.ok(Message.safeParse(msg).success);

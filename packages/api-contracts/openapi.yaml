@@ -1980,6 +1980,132 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/attachments:
+    post:
+      summary: Tạo URL tải tệp lên có ký; tối đa 100 MB
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachmentUploadRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentUploadResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/attachments/{attachmentId}/complete:
+    post:
+      summary: Xác minh kích thước và hoàn tất tải lên
+      security:
+        - bearer: []
+      x-auth: token
+      parameters:
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentUploadComplete"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: USERNAME_TAKEN / IDEMPOTENCY_CONFLICT / VERSION_CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/attachments/download-urls:
+    post:
+      summary: Tạo URL tải xuống cho tệp trong hội thoại của tôi
+      security:
+        - bearer: []
+      x-auth: token
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachmentDownloadUrlsRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttachmentDownloadUrlsResponse"
+        "400":
+          description: VALIDATION_FAILED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: UNAUTHENTICATED / TOKEN_EXPIRED / TOKEN_REUSED / INVALID_CREDENTIALS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "NOT_FOUND (gộp: không tồn tại hoặc không có quyền)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: SERVER_BUSY (+Retry-After)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/sync:
     get:
       summary: Delta user_changes; không cursor = lần đầu
@@ -2850,6 +2976,32 @@ components:
         - count
         - mine
       additionalProperties: false
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        size:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 104857600
+        mimeType:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required:
+        - id
+        - name
+        - size
+        - mimeType
+      additionalProperties: false
     Message:
       type: object
       properties:
@@ -2883,10 +3035,10 @@ components:
           allOf:
             - $ref: "#/components/schemas/ReplyPreview"
         attachments:
-          maxItems: 0
+          maxItems: 20
           type: array
           items:
-            not: {}
+            $ref: "#/components/schemas/Attachment"
         senderName:
           type: string
           maxLength: 80
@@ -2936,7 +3088,6 @@ components:
           pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
         body:
           type: string
-          minLength: 1
           maxLength: 10000
         replyToId:
           default: null
@@ -2946,10 +3097,12 @@ components:
           pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
         attachments:
           default: []
-          maxItems: 0
+          maxItems: 20
           type: array
           items:
-            not: {}
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
       required:
         - clientMsgId
         - body
@@ -2986,6 +3139,123 @@ components:
           maxLength: 8
       required:
         - emoji
+      additionalProperties: false
+    AttachmentUploadRequest:
+      type: object
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        mimeType:
+          type: string
+          maxLength: 100
+          pattern: ^[\w.+-]+\/[\w.+-]+$
+        size:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 104857600
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+      required:
+        - fileName
+        - mimeType
+        - size
+        - sha256
+      additionalProperties: false
+    AttachmentUploadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 255
+        mimeType:
+          type: string
+          minLength: 1
+          maxLength: 100
+        size:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 104857600
+        alreadyUploaded:
+          type: boolean
+        uploadUrl:
+          type: string
+          format: uri
+        uploadApiKey:
+          type: string
+          minLength: 1
+      required:
+        - id
+        - fileName
+        - mimeType
+        - size
+        - alreadyUploaded
+      additionalProperties: false
+    AttachmentUploadComplete:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        ready:
+          type: boolean
+          enum:
+            - true
+      required:
+        - id
+        - ready
+      additionalProperties: false
+    AttachmentDownloadUrl:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        url:
+          type: string
+          format: uri
+        downloadUrl:
+          type: string
+          format: uri
+      required:
+        - id
+        - url
+        - downloadUrl
+      additionalProperties: false
+    AttachmentDownloadUrlsRequest:
+      type: object
+      properties:
+        ids:
+          minItems: 1
+          maxItems: 100
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+      required:
+        - ids
+      additionalProperties: false
+    AttachmentDownloadUrlsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttachmentDownloadUrl"
+      required:
+        - items
       additionalProperties: false
     Conversation:
       type: object

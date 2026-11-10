@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@angular/core';
+import type { RealtimeConfig } from './realtime-client';
 
 import { AuthStore } from '../auth/auth.store';
 import { API_BASE_URL } from '../api-base-url';
@@ -26,12 +27,35 @@ export interface ApiMessage {
     available: boolean;
     body: string | null;
   } | null;
-  attachments: never[];
+  attachments: ApiAttachment[];
   reactions: Reaction[];
   status: 'sent' | 'delivered' | 'seen';
   editedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ApiAttachment {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+}
+
+export interface AttachmentDownloadUrl {
+  id: string;
+  url: string;
+  downloadUrl: string;
+}
+
+interface AttachmentUpload {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  alreadyUploaded: boolean;
+  uploadUrl?: string;
+  uploadApiKey?: string;
 }
 
 export interface ApiConversation {
@@ -86,6 +110,8 @@ interface SendMessageResponse {
 
 export interface ChatPort {
   me(): Promise<ApiMe>;
+  /** Tuỳ chọn: không có thì chỉ poll. */
+  realtimeConfig?(): Promise<Partial<RealtimeConfig>>;
   conversations(): Promise<ApiConversation[]>;
   discoverUsers(query: string, cursor?: string | null): Promise<ApiUserPage>;
   friends(): Promise<ApiFriend[]>;
@@ -97,7 +123,15 @@ export interface ChatPort {
   cancelFriendRequest(requestId: string): Promise<void>;
   removeFriend(userId: string): Promise<void>;
   messages(conversationId: string): Promise<ApiMessage[]>;
-  sendMessage(conversationId: string, clientMsgId: string, body: string, replyTo?: ReplyRef): Promise<ApiMessage>;
+  sendMessage(
+    conversationId: string,
+    clientMsgId: string,
+    body: string,
+    replyTo?: ReplyRef,
+    attachmentIds?: string[],
+  ): Promise<ApiMessage>;
+  uploadAttachment(file: File): Promise<ApiAttachment>;
+  attachmentDownloadUrls(ids: string[]): Promise<AttachmentDownloadUrl[]>;
   updateConversation(conversationId: string, changes: { pinned?: boolean; muted?: boolean }): Promise<ApiConversation>;
   updateReceipts(conversationId: string, seq: string): Promise<void>;
   editMessage(conversationId: string, messageId: string, body: string): Promise<ApiMessage>;
@@ -123,6 +157,10 @@ export class ChatApi implements ChatPort {
   private refreshInFlight?: Promise<string>;
 
   constructor(@Inject(AuthStore) private readonly auth: InstanceType<typeof AuthStore>) {}
+
+  async realtimeConfig(): Promise<Partial<RealtimeConfig>> {
+    return this.request('/v1/realtime');
+  }
 
   async me(): Promise<ApiMe> {
     return this.request('/v1/me');
@@ -224,6 +262,7 @@ export class ChatApi implements ChatPort {
     clientMsgId: string,
     body: string,
     replyTo?: ReplyRef,
+    attachmentIds: string[] = [],
   ): Promise<ApiMessage> {
     const result = await this.request<SendMessageResponse>(
       `/v1/conversations/${encodeURIComponent(conversationId)}/messages`,
@@ -233,11 +272,75 @@ export class ChatApi implements ChatPort {
           clientMsgId,
           body,
           replyToId: replyTo?.messageId ?? null,
-          attachments: [],
+          attachments: attachmentIds,
         }),
       },
     );
     return result.message;
+  }
+
+  async uploadAttachment(file: File): Promise<ApiAttachment> {
+    const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+    const sha256 = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    const upload = await this.request<AttachmentUpload>('/v1/attachments', {
+      method: 'POST',
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        size: file.size,
+        sha256,
+      }),
+    });
+
+    if (!upload.alreadyUploaded) {
+      if (!upload.uploadUrl || !upload.uploadApiKey) {
+        throw new ChatApiError(502, 'INVALID_RESPONSE', 'Máy chủ không trả về thông tin tải tệp lên.');
+      }
+
+      let response: Response;
+      try {
+        response = await fetch(upload.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            apikey: upload.uploadApiKey,
+            Authorization: `Bearer ${upload.uploadApiKey}`,
+            'Content-Type': file.type || 'application/octet-stream',
+            'x-upsert': 'true',
+          },
+          body: file,
+        });
+      } catch (error) {
+        throw new ChatApiError(
+          0,
+          'UPLOAD_NETWORK_ERROR',
+          error instanceof Error ? error.message : 'Không thể tải tệp lên.',
+        );
+      }
+      if (!response.ok) {
+        throw new ChatApiError(response.status, 'UPLOAD_FAILED', 'Không thể tải tệp lên kho lưu trữ.');
+      }
+      await this.request(`/v1/attachments/${encodeURIComponent(upload.id)}/complete`, {
+        method: 'POST',
+      });
+    }
+
+    return {
+      id: upload.id,
+      name: upload.fileName,
+      size: upload.size,
+      mimeType: upload.mimeType,
+    };
+  }
+
+  async attachmentDownloadUrls(ids: string[]): Promise<AttachmentDownloadUrl[]> {
+    if (!ids.length) {
+      return [];
+    }
+    const result = await this.request<{ items: AttachmentDownloadUrl[] }>('/v1/attachments/download-urls', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+    return result.items;
   }
 
   async updateConversation(

@@ -14,9 +14,12 @@ export type FailureReason = 'network' | 'too_large' | 'blocked' | 'session';
 export type LoadState = 'loading' | 'ready' | 'error';
 
 export interface Attachment {
+  id?: string;
   name: string;
   size: number;
   url: string;
+  downloadUrl?: string;
+  mimeType?: string;
   /** Tỉ lệ rộng/cao của ảnh, để giữ chỗ và không nhảy layout. */
   ratio?: number;
 }

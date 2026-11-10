@@ -286,6 +286,7 @@
     "label": "Compose message",
     "placeholder": "Message {{ name }}...",
     "send": "Send message",
+    "saveFiles": "Send files",
     "sending": "Sending",
     "emoji": "Pick emoji",
     "emojiList": "Emoji list",
@@ -293,6 +294,11 @@
     "file": "Attach file",
     "removeFile": "Remove file {{ name }}",
     "fileTooLarge": "File exceeds 100MB and can't be attached.",
+    "fileLimit": "You can attach up to 20 files to one message.",
+    "uploadStageError": "The file couldn't be uploaded.",
+    "sendStageError": "The file uploaded, but couldn't be attached to the message.",
+    "download-urlStageError": "The message was sent, but its file link couldn't be loaded.",
+    "partialSend": "Sent {{ n }} file(s) before an error occurred. Please resend the remaining files.",
     "sendError": "Couldn't send the message. Please try again."
   },
   "lightbox": {

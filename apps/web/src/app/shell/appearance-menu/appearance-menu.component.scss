@@ -44,7 +44,7 @@
 
   &__label {
     color: var(--color-text-muted);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
   }
 
   &__name,
@@ -62,7 +62,7 @@
   &__email,
   &__username {
     color: var(--color-text-muted);
-    font-size: 11px;
+    font-size: var(--font-size-xs);
   }
 }
 
